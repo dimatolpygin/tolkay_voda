@@ -6,5 +6,8 @@ data/*.db-*
 .DS_Store
 public/media/
 scripts/_unpacked/
+scripts/_fonts/
+scripts/_shots/
+.playwright-cli/
 caddy_data/
 caddy_config/
