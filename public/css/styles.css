@@ -227,28 +227,56 @@ img { max-width: 100%; display: block; }
 .btn-outline:hover { background: var(--gold); color: #fff; }
 .btn-outline .ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 
-/* ===== Блог ===== */
+/* ===== Блог (горизонтальная лента) ===== */
 .blog { margin-top: 34px; }
-.blog__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.blog__rail-wrap { position: relative; }
+
+.blog__rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 2 * 18px) / 3); /* видно ~3 карточки */
+  gap: 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  padding: 4px 2px 14px;
+  scrollbar-width: thin;
+}
+.blog__rail::-webkit-scrollbar { height: 8px; }
+.blog__rail::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+
 .post {
+  scroll-snap-align: start;
   background: var(--card); border: 1px solid var(--line); border-radius: 14px;
   overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer;
   display: flex; flex-direction: column; text-decoration: none; color: inherit;
   transition: transform .14s ease, box-shadow .2s ease;
 }
 .post:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-.post__img { aspect-ratio: 16/10; object-fit: cover; width: 100%; background: var(--line); }
-.post__body { padding: 14px 16px; }
-.post__title { font-family: var(--font-h); font-weight: 700; font-size: 1.1rem; margin: 0 0 6px; }
-.post__excerpt { margin: 0; color: var(--ink-soft); font-size: 0.92rem; }
-.post__date { margin: 8px 0 0; color: var(--gold-2); font-size: 0.8rem; font-weight: 600; }
-
-.blog__pager { display: flex; justify-content: center; gap: 8px; margin-top: 22px; }
-.blog__pager button {
-  min-width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line);
-  background: #fff; cursor: pointer; font-family: var(--font-h); font-weight: 700; color: var(--ink);
+.post__img { aspect-ratio: 16/10; object-fit: cover; width: 100%; background: var(--line); flex: 0 0 auto; }
+.post__body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.post__title {
+  font-family: var(--font-h); font-weight: 700; font-size: 1.1rem; margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.blog__pager button[aria-current="true"] { background: var(--gold); color: #fff; border-color: var(--gold); }
+.post__excerpt {
+  margin: 0; color: var(--ink-soft); font-size: 0.92rem;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.post__date { margin: 2px 0 0; color: var(--gold-2); font-size: 0.8rem; font-weight: 600; }
+
+/* стрелки прокрутки */
+.blog__nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
+  background: #fff; box-shadow: var(--shadow-sm); cursor: pointer;
+  display: grid; place-items: center; color: var(--gold-2);
+  transition: background .16s ease, color .16s ease;
+}
+.blog__nav:hover { background: var(--gold); color: #fff; }
+.blog__nav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; }
+.blog__nav--prev { left: -10px; }
+.blog__nav--next { right: -10px; }
 
 /* ===== Связь ===== */
 .contact { margin-top: 34px; padding: 28px; text-align: center; }
@@ -319,8 +347,9 @@ img { max-width: 100%; display: block; }
   .now__viz { grid-column: 1 / -1; width: 100%; max-width: none; }
   .forecast { grid-template-columns: 1fr; }
   .forecast__media { order: -1; }
-  .blog__grid { grid-template-columns: 1fr; }
+  .blog__rail { grid-auto-columns: 78%; } /* ~1.2 карточки, скролл вправо */
+  .blog__nav { display: none; } /* на мобилке только свайп */
 }
 @media (min-width: 761px) and (max-width: 920px) {
-  .blog__grid { grid-template-columns: repeat(2, 1fr); }
+  .blog__rail { grid-auto-columns: calc((100% - 18px) / 2); } /* ~2 карточки */
 }

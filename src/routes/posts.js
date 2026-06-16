@@ -10,17 +10,19 @@ const bySlug = db.prepare('SELECT * FROM posts WHERE slug = ? AND published = 1'
 
 export default async function postsRoutes(app) {
   app.get('/posts', async (req, reply) => {
+    // limit позволяет карусели забрать все статьи одной лентой (cap 100)
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || PAGE_SIZE));
     const page = Math.max(1, Number(req.query.page) || 1);
-    const offset = (page - 1) * PAGE_SIZE;
-    const items = listStmt.all(PAGE_SIZE, offset);
+    const offset = (page - 1) * limit;
+    const items = listStmt.all(limit, offset);
     const total = countStmt.get().n;
     reply.header('cache-control', 'public, max-age=120');
     return {
       ok: true,
       page,
-      pageSize: PAGE_SIZE,
+      pageSize: limit,
       total,
-      pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+      pages: Math.max(1, Math.ceil(total / limit)),
       posts: items,
     };
   });

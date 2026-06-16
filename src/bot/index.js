@@ -106,11 +106,8 @@ bot.callbackQuery('type:forecast', async (ctx) => {
 });
 bot.callbackQuery('type:post', async (ctx) => {
   await ctx.answerCallbackQuery();
-  setState(who(ctx).id, { type: 'post', step: 'await_text' });
-  await reply(
-    ctx,
-    'Статья в блог. Пришлите текст: первая строка — заголовок, дальше — текст статьи (можно сразу с фото).'
-  );
+  setState(who(ctx).id, { type: 'post', step: 'await_title' });
+  await reply(ctx, 'Статья в блог. Шаг 1 из 3: пришлите заголовок статьи одной строкой.');
 });
 
 // --- Пропустить фото ---
@@ -170,8 +167,7 @@ bot.on('message:text', async (ctx) => {
   if (ctx.message.text.startsWith('/')) return;
   const st = getState(who(ctx).id);
   if (!st) return reply(ctx, 'Нажмите /start и выберите тип контента.', { reply_markup: kbType() });
-  if (st.step === 'await_text') return onText(ctx, st, ctx.message.text, null);
-  return reply(ctx, 'Сейчас жду действие кнопкой. /start — начать заново.');
+  return onText(ctx, st, ctx.message.text, null);
 });
 
 bot.on(':photo', async (ctx) => {
@@ -179,27 +175,56 @@ bot.on(':photo', async (ctx) => {
   const ph = largestPhoto(ctx.message.photo);
   const caption = ctx.message.caption || '';
   if (!st) return reply(ctx, 'Нажмите /start и выберите тип контента.', { reply_markup: kbType() });
-  if (st.step === 'await_text') return onText(ctx, st, caption, ph?.file_id || null);
   if (st.step === 'await_photo') {
     st.photoFileId = ph?.file_id || null;
     return toPreview(ctx, st);
   }
-  return reply(ctx, 'Сейчас жду действие кнопкой. /start — начать заново.');
+  // фото пришло на текстовом шаге — берём подпись как текст и фото сразу
+  return onText(ctx, st, caption, ph?.file_id || null);
 });
 
-// Текст получен на шаге await_text.
+// Маршрутизация текста по шагам сценария.
 async function onText(ctx, st, text, photoFileId) {
   const trimmed = (text || '').trim();
-  if (!trimmed) return reply(ctx, 'Пустой текст. Пришлите содержимое ещё раз.');
-  st.rawText = trimmed;
-  if (photoFileId) {
-    st.photoFileId = photoFileId;
-    return toPreview(ctx, st); // текст и фото пришли сразу
+
+  // --- Прогноз: один текстовый шаг ---
+  if (st.type === 'forecast') {
+    if (st.step !== 'await_text') {
+      return reply(ctx, 'Сейчас жду действие кнопкой. /start — начать заново.');
+    }
+    if (!trimmed) return reply(ctx, 'Пустой текст. Пришлите прогноз ещё раз.');
+    st.rawText = trimmed;
+    if (photoFileId) {
+      st.photoFileId = photoFileId;
+      return toPreview(ctx, st);
+    }
+    st.step = 'await_photo';
+    return reply(ctx, 'Принял текст. Пришлите фото для записи или нажмите «Без фото».', {
+      reply_markup: kbPhoto(),
+    });
   }
-  st.step = 'await_photo';
-  return reply(ctx, 'Принял текст. Пришлите фото для записи или нажмите «Без фото».', {
-    reply_markup: kbPhoto(),
-  });
+
+  // --- Статья: заголовок → текст → фото ---
+  if (st.step === 'await_title') {
+    if (!trimmed) return reply(ctx, 'Заголовок пустой. Пришлите заголовок одной строкой.');
+    st.title = trimmed.split('\n')[0].trim();
+    st.step = 'await_body';
+    return reply(ctx, `Заголовок принят: «${st.title}».\nШаг 2 из 3: пришлите текст статьи.`);
+  }
+  if (st.step === 'await_body') {
+    if (!trimmed) return reply(ctx, 'Текст пустой. Пришлите текст статьи.');
+    st.body = trimmed;
+    if (photoFileId) {
+      st.photoFileId = photoFileId;
+      return toPreview(ctx, st);
+    }
+    st.step = 'await_photo';
+    return reply(ctx, 'Текст принят. Шаг 3 из 3: пришлите фото или нажмите «Без фото».', {
+      reply_markup: kbPhoto(),
+    });
+  }
+
+  return reply(ctx, 'Сейчас жду действие кнопкой. /start — начать заново.');
 }
 
 // Готовим предпросмотр (для прогноза — через ИИ) и показываем кнопки публикации.
@@ -236,14 +261,9 @@ async function toPreview(ctx, st) {
     return reply(ctx, lines.join('\n'), { reply_markup: kbPublish() });
   }
 
-  // Статья: первая строка — заголовок, остальное — тело.
-  const ls = st.rawText.replace(/\r\n/g, '\n').split('\n');
-  const title = (ls.shift() || '').trim();
-  const body = ls.join('\n').trim();
-  if (!title) {
-    st.step = 'await_text';
-    return reply(ctx, 'Нет заголовка. Первая строка должна быть заголовком. Пришлите текст ещё раз.');
-  }
+  // Статья: заголовок и тело собраны на отдельных шагах.
+  const title = (st.title || '').trim();
+  const body = (st.body || '').trim();
   const excerpt = (body.split(/\n\s*\n/)[0] || body).slice(0, 180).trim();
   st.prepared = { title, excerpt, body };
 

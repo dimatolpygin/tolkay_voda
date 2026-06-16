@@ -1,18 +1,17 @@
-// Блог: сетка статей с пагинацией. Данные из /api/posts?page=N.
-// Клик по карточке ведёт на отдельную страницу статьи /post.html?slug=...
+// Блог: горизонтальная лента статей со скроллом вправо.
+// Данные из /api/posts (одной лентой). Клик по карточке → /post.html?slug=...
 (() => {
   const section = document.getElementById('blog');
   if (!section) return;
 
-  const grid = document.getElementById('blogGrid');
-  const pager = document.getElementById('blogPager');
+  const rail = document.getElementById('blogRail');
+  const prev = document.getElementById('blogPrev');
+  const next = document.getElementById('blogNext');
 
   const MONTHS = [
     'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
     'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
   ];
-
-  // "YYYY-MM-DD HH:MM:SS" → "16 июня 2026"
   function formatDate(s) {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
     if (!m) return '';
@@ -50,37 +49,40 @@
     return a;
   }
 
-  function renderPager(page, pages) {
-    pager.innerHTML = '';
-    if (pages <= 1) return;
-    for (let i = 1; i <= pages; i++) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = String(i);
-      if (i === page) b.setAttribute('aria-current', 'true');
-      b.addEventListener('click', () => load(i));
-      pager.append(b);
-    }
+  // Показ/скрытие стрелок в зависимости от позиции скролла.
+  function updateNav() {
+    const max = rail.scrollWidth - rail.clientWidth;
+    const overflow = max > 4;
+    prev.hidden = !overflow || rail.scrollLeft <= 2;
+    next.hidden = !overflow || rail.scrollLeft >= max - 2;
   }
 
-  async function load(page = 1) {
+  function scrollByCards(dir) {
+    const first = rail.querySelector('.post');
+    const step = first ? first.getBoundingClientRect().width + 18 : rail.clientWidth * 0.8;
+    rail.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }
+
+  prev.addEventListener('click', () => scrollByCards(-1));
+  next.addEventListener('click', () => scrollByCards(1));
+  rail.addEventListener('scroll', updateNav, { passive: true });
+  window.addEventListener('resize', updateNav);
+
+  async function load() {
     try {
-      const r = await fetch(`/api/posts?page=${page}`);
+      const r = await fetch('/api/posts?limit=50');
       const data = await r.json();
       if (!data || !data.ok || !data.posts || !data.posts.length) {
-        section.hidden = true; // нет статей — раздел не показываем
+        section.hidden = true;
         return;
       }
-      grid.innerHTML = '';
-      for (const p of data.posts) grid.append(card(p));
-      renderPager(data.page, data.pages);
+      rail.replaceChildren(...data.posts.map(card));
       section.hidden = false;
-      // при перелистывании подскроллим к началу блога
-      if (page !== 1) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      requestAnimationFrame(updateNav);
     } catch {
       section.hidden = true;
     }
   }
 
-  load(1);
+  load();
 })();

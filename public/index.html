@@ -69,8 +69,15 @@
     <!-- БЛОГ -->
     <section class="blog" id="blog" hidden>
       <h2 class="section-title">Блог клана</h2>
-      <div id="blogGrid" class="blog__grid"></div>
-      <div id="blogPager" class="blog__pager"></div>
+      <div class="blog__rail-wrap">
+        <button class="blog__nav blog__nav--prev" id="blogPrev" type="button" aria-label="Предыдущие" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div id="blogRail" class="blog__rail"></div>
+        <button class="blog__nav blog__nav--next" id="blogNext" type="button" aria-label="Следующие" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
     </section>
 
     <!-- СВЯЗЬ -->
