@@ -25,6 +25,12 @@ export const config = {
       .filter(Boolean)
       .map(Number),
   },
+
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || '',
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    baseUrl: (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, ''),
+  },
 };
 
 export const isProd = config.env === 'production';

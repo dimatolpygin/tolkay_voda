@@ -35,3 +35,22 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at DESC);
 `);
+
+// Миграция: структурированные поля прогноза (выжимка от ИИ). Добавляем
+// недостающие колонки в существующую таблицу forecast — безопасно и идемпотентно.
+const forecastCols = new Set(
+  db.prepare('PRAGMA table_info(forecast)').all().map((c) => c.name)
+);
+const EXTRA_FORECAST_COLS = {
+  subtitle: 'TEXT', // "28-й Солнечный день, 1/2 Лунные дни"
+  intro: 'TEXT', // вводный абзац для свёрнутого блока
+  water: 'TEXT', // Вода дня
+  color: 'TEXT', // Цвет дня
+  food: 'TEXT', // Еда дня
+  advice: 'TEXT', // Совет дня
+};
+for (const [name, type] of Object.entries(EXTRA_FORECAST_COLS)) {
+  if (!forecastCols.has(name)) {
+    db.exec(`ALTER TABLE forecast ADD COLUMN ${name} ${type};`);
+  }
+}

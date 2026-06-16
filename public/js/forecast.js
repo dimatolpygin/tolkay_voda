@@ -1,12 +1,15 @@
-// Прогноз дня: грузит актуальную запись, рисует блок на главной,
-// по кнопке открывает модалку с полным текстом.
+// Прогноз дня: грузит актуальную запись, рисует блок на главной по макету
+// (лунный день, вводка, строки Вода/Цвет/Еда/Совет дня), по кнопке открывает
+// модалку с полным текстом, разбитым на секции (## заголовки).
 (() => {
   const section = document.getElementById('forecast');
   if (!section) return;
 
   const elTitle = document.getElementById('fcTitle');
   const elDate = document.getElementById('fcDate');
-  const elSummary = document.getElementById('fcSummary');
+  const elSubtitle = document.getElementById('fcSubtitle');
+  const elIntro = document.getElementById('fcIntro');
+  const elMeta = document.getElementById('fcMeta');
   const elImage = document.getElementById('fcImage');
   const elMedia = section.querySelector('.forecast__media');
   const btnMore = document.getElementById('fcMore');
@@ -26,7 +29,6 @@
     'четверг', 'пятница', 'суббота',
   ];
 
-  // YYYY-MM-DD → «16 июня 2026, вторник»
   function formatDate(iso) {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
     if (!m) return iso || '';
@@ -34,20 +36,43 @@
     return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${WEEKDAYS[d.getDay()]}`;
   }
 
+  // Строка вида «Вода дня: текст» с выделенным ключом.
+  function metaRow(label, value) {
+    if (!value) return null;
+    const p = document.createElement('p');
+    p.className = 'forecast__row';
+    const key = document.createElement('span');
+    key.className = 'forecast__key';
+    key.textContent = `${label}: `;
+    p.append(key, document.createTextNode(value));
+    return p;
+  }
+
   let current = null;
 
   function render(f) {
     current = f;
 
-    if (f.title) {
-      elTitle.textContent = f.title;
-      elTitle.hidden = false;
-    } else {
-      elTitle.hidden = true;
-    }
-
+    elTitle.textContent = f.title || 'Прогноз от Геннадия Серафимовича';
     elDate.textContent = formatDate(f.date);
-    elSummary.textContent = f.summary || f.body || '';
+
+    elSubtitle.textContent = f.subtitle || '';
+    elSubtitle.hidden = !f.subtitle;
+
+    const intro = f.intro || f.summary || '';
+    elIntro.textContent = intro;
+    elIntro.hidden = !intro;
+
+    elMeta.replaceChildren();
+    for (const [label, value] of [
+      ['Вода дня', f.water],
+      ['Цвет дня', f.color],
+      ['Еда дня', f.food],
+      ['Совет дня', f.advice],
+    ]) {
+      const row = metaRow(label, value);
+      if (row) elMeta.append(row);
+    }
 
     if (f.image_url) {
       elImage.src = f.image_url;
@@ -57,12 +82,45 @@
       elMedia.hidden = true;
     }
 
-    // Кнопку «Читать полный прогноз» показываем только если полный текст
-    // действительно богаче выжимки.
-    const hasMore = f.body && f.body.trim() && f.body.trim() !== (f.summary || '').trim();
-    btnMore.hidden = !hasMore;
+    const hasFull = f.body && f.body.trim();
+    btnMore.hidden = !hasFull;
 
     section.hidden = false;
+  }
+
+  // Рендер полного текста: строки «## Заголовок» → подзаголовки, остальное — абзацы.
+  function renderFull(container, text) {
+    container.replaceChildren();
+    const blocks = String(text || '').replace(/\r\n/g, '\n').split(/\n{2,}/);
+    for (const block of blocks) {
+      const trimmed = block.trim();
+      if (!trimmed) continue;
+      const head = /^##\s+(.*)$/m;
+      // Разбиваем блок построчно: заголовки и текст могут идти подряд.
+      const lines = trimmed.split('\n');
+      let buf = [];
+      const flush = () => {
+        if (!buf.length) return;
+        const p = document.createElement('p');
+        p.className = 'modal__p';
+        p.textContent = buf.join('\n');
+        container.append(p);
+        buf = [];
+      };
+      for (const line of lines) {
+        const hm = head.exec(line);
+        if (hm) {
+          flush();
+          const h = document.createElement('h3');
+          h.className = 'modal__h';
+          h.textContent = hm[1].trim();
+          container.append(h);
+        } else {
+          buf.push(line);
+        }
+      }
+      flush();
+    }
   }
 
   // ---- Модалка ----
@@ -74,8 +132,9 @@
     modalTitle.textContent = 'Прогноз дня';
     modalHeading.textContent = current.title || '';
     modalHeading.hidden = !current.title;
-    modalDate.textContent = formatDate(current.date);
-    modalBody.textContent = current.body || current.summary || '';
+    modalDate.textContent =
+      [formatDate(current.date), current.subtitle].filter(Boolean).join(' · ');
+    renderFull(modalBody, current.body || current.intro || '');
     modal.classList.add('is-open');
     document.body.style.overflow = 'hidden';
     modal.querySelector('.modal__close')?.focus();
@@ -95,14 +154,13 @@
     if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
   });
 
-  // ---- Загрузка ----
   async function load() {
     try {
       const r = await fetch('/api/forecast/today');
       const data = await r.json();
       if (data && data.ok && data.forecast) render(data.forecast);
     } catch {
-      // молча: блок остаётся скрытым, если прогноза нет или сеть упала
+      // молча: блок скрыт, если прогноза нет
     }
   }
 
