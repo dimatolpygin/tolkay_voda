@@ -14,6 +14,7 @@ export function titleFromFilename(file) {
     .replace(/_/g, ' ')
     .replace(/«|»|"/g, '')
     .replace(/\s+/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
     .replace(/[\s.,;:—-]+$/u, '')
     .trim();
   // капитализация первой буквы
