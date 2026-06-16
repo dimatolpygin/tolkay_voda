@@ -12,6 +12,7 @@
     "start": "node src/server.js",
     "bot": "node src/bot/index.js",
     "upload:tracks": "node scripts/upload-tracks.js",
+    "seed:forecast": "node scripts/seed-forecast.js",
     "test": "node --test"
   },
   "dependencies": {

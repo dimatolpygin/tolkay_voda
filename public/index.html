@@ -100,11 +100,24 @@
     </div>
   </footer>
 
+  <!-- МОДАЛКА «Читать полный прогноз» -->
+  <div class="modal" id="fcModal" role="dialog" aria-modal="true" aria-labelledby="fcModalTitle">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__panel">
+      <button class="modal__close" type="button" data-close aria-label="Закрыть">&times;</button>
+      <h2 id="fcModalTitle" class="section-title">Прогноз дня</h2>
+      <p id="fcModalHeading" class="forecast__heading"></p>
+      <p id="fcModalDate" class="forecast__date"></p>
+      <div id="fcModalBody" class="modal__body"></div>
+    </div>
+  </div>
+
   <!-- Аудио-элемент радио. Без crossorigin: воспроизведение mp3 с CDN работает
        при любом CORS. Визуализатор — процедурный (не читает аудио-данные),
        поэтому routing через WebAudio не нужен и звук не глушится. -->
   <audio id="audio" preload="none"></audio>
 
   <script src="/js/radio.js" defer></script>
+  <script src="/js/forecast.js" defer></script>
 </body>
 </html>
