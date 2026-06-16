@@ -1,0 +1,299 @@
+/* ===== Шрифты (self-hosted) ===== */
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/assets/fonts/oswald-v57-cyrillic_latin-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/assets/fonts/oswald-v57-cyrillic_latin-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/fonts/inter-v20-cyrillic_latin-regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/assets/fonts/inter-v20-cyrillic_latin-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/assets/fonts/inter-v20-cyrillic_latin-700.woff2') format('woff2');
+}
+
+/* ===== Токены ===== */
+:root {
+  --bg: #eef2f5;
+  --ink: #1d2733;
+  --ink-soft: #56636f;
+  --card: #ffffff;
+  --line: #e6eaee;
+  --gold: #c79350;
+  --gold-2: #a9732f;
+  --gold-ink: #6b4a19;
+  --radius: 18px;
+  --shadow: 0 18px 40px -22px rgba(20, 35, 50, 0.45);
+  --shadow-sm: 0 8px 22px -16px rgba(20, 35, 50, 0.5);
+  --maxw: 920px;
+  --font-h: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-b: 'Inter', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--font-b);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; display: block; }
+
+.container { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 18px; }
+
+/* ===== Заголовки секций ===== */
+.section-title {
+  font-family: var(--font-h);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  color: var(--gold-2);
+  margin: 0 0 14px;
+}
+
+/* ===== ХИРО ===== */
+.hero {
+  position: relative;
+  min-height: clamp(440px, 64vh, 620px);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: #0e1822 url('/assets/img/bg-desktop.webp') center/cover no-repeat;
+  padding: 48px 18px 92px;
+  overflow: hidden;
+}
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10,20,30,.28) 0%, rgba(10,20,30,.12) 38%, rgba(238,242,245,.0) 70%, rgba(238,242,245,1) 100%);
+}
+.hero__inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+
+.hero__logo {
+  width: clamp(120px, 22vw, 170px);
+  height: auto;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
+}
+.hero__title {
+  font-family: var(--font-h);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: clamp(2.1rem, 8vw, 4.4rem);
+  line-height: 0.98;
+  color: #fff;
+  margin: 10px 0 22px;
+  text-shadow: 0 3px 18px rgba(0,0,0,.45);
+}
+.hero__sub {
+  margin: 16px 0 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #2b3947;
+  font-weight: 600;
+}
+
+/* ===== Кнопка плеера ===== */
+.play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 34px 15px 18px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--font-h);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: clamp(1rem, 2.6vw, 1.25rem);
+  color: #fff;
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-2) 100%);
+  box-shadow: 0 14px 30px -12px rgba(169,115,47,.75), inset 0 1px 0 rgba(255,255,255,.35);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+}
+.play-btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.play-btn:active { transform: translateY(0); }
+.play-btn__icon {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: rgba(255,255,255,.18);
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.play-btn__icon svg { width: 22px; height: 22px; fill: #fff; }
+.play-btn .ic-pause { display: none; }
+.play-btn.is-playing .ic-play { display: none; }
+.play-btn.is-playing .ic-pause { display: block; }
+.play-btn.is-loading .play-btn__label::after {
+  content: ''; display: inline-block; width: 1em;
+  animation: dots 1.2s steps(4, end) infinite;
+}
+@keyframes dots { 0%{content:'';} 25%{content:'.';} 50%{content:'..';} 75%{content:'...';} }
+
+/* ===== Карточки ===== */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+}
+
+/* ===== Сейчас играет ===== */
+.now {
+  margin-top: -56px;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+}
+.now__cover { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; box-shadow: var(--shadow-sm); }
+.now__meta { min-width: 0; }
+.now__label {
+  margin: 0; font-size: 0.7rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--gold-2); font-weight: 600;
+}
+.now__title {
+  margin: 2px 0; font-family: var(--font-h); font-weight: 700; font-size: 1.25rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.now__artist { margin: 0; color: var(--ink-soft); font-size: 0.92rem; }
+.now__viz { width: 260px; max-width: 42vw; height: 56px; opacity: .9; }
+
+/* ===== Прогноз дня ===== */
+.forecast {
+  margin-top: 26px;
+  padding: 26px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 26px;
+  align-items: start;
+}
+.forecast__heading { font-family: var(--font-h); font-weight: 700; font-size: 1.4rem; margin: 0 0 4px; }
+.forecast__date { color: var(--gold-2); font-weight: 600; margin: 0 0 12px; font-size: 0.95rem; }
+.forecast__summary { color: var(--ink-soft); white-space: pre-line; }
+.forecast__media img { width: 100%; border-radius: 14px; box-shadow: var(--shadow-sm); }
+
+.btn-outline {
+  margin-top: 18px;
+  display: inline-flex; align-items: center; gap: 10px;
+  background: none; cursor: pointer;
+  border: 2px solid var(--gold); color: var(--gold-2);
+  font-family: var(--font-h); font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; font-size: 0.95rem;
+  padding: 11px 20px; border-radius: 12px;
+  transition: background .18s ease, color .18s ease;
+}
+.btn-outline:hover { background: var(--gold); color: #fff; }
+.btn-outline .ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+/* ===== Блог ===== */
+.blog { margin-top: 34px; }
+.blog__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.post {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer;
+  display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  transition: transform .14s ease, box-shadow .2s ease;
+}
+.post:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.post__img { aspect-ratio: 16/10; object-fit: cover; width: 100%; background: var(--line); }
+.post__body { padding: 14px 16px; }
+.post__title { font-family: var(--font-h); font-weight: 700; font-size: 1.1rem; margin: 0 0 6px; }
+.post__excerpt { margin: 0; color: var(--ink-soft); font-size: 0.92rem; }
+.post__date { margin: 8px 0 0; color: var(--gold-2); font-size: 0.8rem; font-weight: 600; }
+
+.blog__pager { display: flex; justify-content: center; gap: 8px; margin-top: 22px; }
+.blog__pager button {
+  min-width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line);
+  background: #fff; cursor: pointer; font-family: var(--font-h); font-weight: 700; color: var(--ink);
+}
+.blog__pager button[aria-current="true"] { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+/* ===== Связь ===== */
+.contact { margin-top: 34px; padding: 28px; text-align: center; }
+.contact__lead { color: var(--ink-soft); margin: 0 0 18px; }
+.contact__links { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.social {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 12px 18px; border-radius: 12px; text-decoration: none;
+  background: #f4f6f8; border: 1px solid var(--line); color: var(--ink); font-weight: 600;
+  transition: background .16s ease, transform .12s ease;
+}
+.social:hover { background: var(--gold); color: #fff; transform: translateY(-1px); }
+.social:hover .social__ic { fill: #fff; }
+.social:hover .yt-tri { fill: var(--gold); }
+.social__ic { width: 22px; height: 22px; fill: var(--gold-2); }
+.social__ic .yt-tri { fill: #fff; }
+.social:nth-child(3) .social__ic { fill: none; stroke: var(--gold-2); stroke-width: 1.8; }
+.social:nth-child(3):hover .social__ic { stroke: #fff; }
+
+/* ===== Футер ===== */
+.footer { margin-top: 44px; padding: 26px 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 0.9rem; }
+.footer__inner { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.footer a { color: var(--ink-soft); }
+.footer__sep { opacity: .5; }
+
+/* ===== Модалка прогноза ===== */
+.modal { position: fixed; inset: 0; z-index: 50; display: none; }
+.modal.is-open { display: block; }
+.modal__backdrop { position: absolute; inset: 0; background: rgba(12,20,28,.6); }
+.modal__panel {
+  position: relative; max-width: 720px; margin: 6vh auto; background: #fff;
+  border-radius: var(--radius); padding: 28px; max-height: 86vh; overflow: auto;
+  box-shadow: var(--shadow);
+}
+.modal__close {
+  position: absolute; top: 14px; right: 14px; width: 38px; height: 38px;
+  border-radius: 50%; border: none; background: #f0f2f4; cursor: pointer; font-size: 20px;
+}
+.modal__body { white-space: pre-line; color: var(--ink); margin-top: 10px; }
+
+/* ===== Адаптив ===== */
+@media (max-width: 760px) {
+  .hero { background-image: url('/assets/img/bg-mobile.webp'); min-height: 78vh; }
+  .now { grid-template-columns: auto 1fr; }
+  .now__viz { grid-column: 1 / -1; width: 100%; max-width: none; }
+  .forecast { grid-template-columns: 1fr; }
+  .forecast__media { order: -1; }
+  .blog__grid { grid-template-columns: 1fr; }
+}
+@media (min-width: 761px) and (max-width: 920px) {
+  .blog__grid { grid-template-columns: repeat(2, 1fr); }
+}

@@ -3,10 +3,105 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Радио «Толкай Вода»</title>
+  <title>Радио «Толкай Вода» — круглосуточный эфир</title>
+  <meta name="description" content="Радио Толкай Вода — слушайте песни клана онлайн. Прогноз дня и блог." />
+  <meta name="theme-color" content="#0e1822" />
+
+  <link rel="icon" type="image/webp" href="/assets/img/logo.webp" />
+  <link rel="preload" href="/assets/fonts/oswald-v57-cyrillic_latin-700.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/inter-v20-cyrillic_latin-regular.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" as="image" href="/assets/img/bg-desktop.webp" />
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
-  <h1>Радио «Толкай Вода»</h1>
-  <p>Каркас работает. Сборка главной — Этап 1.</p>
+  <!-- ХЕДЕР / ХИРО -->
+  <header class="hero">
+    <div class="hero__overlay"></div>
+    <div class="hero__inner">
+      <img class="hero__logo" src="/assets/img/logo.webp" width="170" height="170"
+           alt="Клан Толкай Вода — Слава моржам" />
+      <h1 class="hero__title">Радио Толкай Вода</h1>
+
+      <button id="playBtn" class="play-btn" type="button" aria-pressed="false">
+        <span class="play-btn__icon" aria-hidden="true">
+          <svg class="ic-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="ic-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        </span>
+        <span class="play-btn__label">Слушать радио</span>
+      </button>
+
+      <p class="hero__sub">Круглосуточный эфир</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- СЕЙЧАС ИГРАЕТ -->
+    <section class="now card" aria-live="polite">
+      <img id="nowCover" class="now__cover" src="/assets/img/cover-default.webp" alt="" width="84" height="84" />
+      <div class="now__meta">
+        <p class="now__label">Сейчас играет</p>
+        <p id="nowTitle" class="now__title">Нажмите «Слушать радио»</p>
+        <p id="nowArtist" class="now__artist">Клан Толкай Вода</p>
+      </div>
+      <canvas id="viz" class="now__viz" width="520" height="64" aria-hidden="true"></canvas>
+    </section>
+
+    <!-- ПРОГНОЗ ДНЯ -->
+    <section class="forecast card" id="forecast" hidden>
+      <div class="forecast__text">
+        <h2 class="section-title">Прогноз дня</h2>
+        <h3 id="fcTitle" class="forecast__heading"></h3>
+        <p id="fcDate" class="forecast__date"></p>
+        <div id="fcSummary" class="forecast__summary"></div>
+        <button id="fcMore" class="btn-outline" type="button">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a3 3 0 0 1 3 3v11a3 3 0 0 0-3-3H4zM20 5h0a3 3 0 0 0-3 3v8"/></svg>
+          Читать полный прогноз
+        </button>
+      </div>
+      <div class="forecast__media">
+        <img id="fcImage" src="" alt="Прогноз дня" loading="lazy" />
+      </div>
+    </section>
+
+    <!-- БЛОГ -->
+    <section class="blog" id="blog" hidden>
+      <h2 class="section-title">Блог клана</h2>
+      <div id="blogGrid" class="blog__grid"></div>
+      <div id="blogPager" class="blog__pager"></div>
+    </section>
+
+    <!-- СВЯЗЬ -->
+    <section class="contact card">
+      <h2 class="section-title">Связь с кланом</h2>
+      <p class="contact__lead">Пишите нам — отвечаем за словом в карман не лезем.</p>
+      <div class="contact__links">
+        <a class="social" href="https://t.me/klanTolkayvoda" target="_blank" rel="noopener">
+          <svg class="social__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.8 4.3 2.9 11.6c-1 .4-1 1 0 1.3l4.6 1.4 1.8 5.6c.2.6.6.7 1 .3l2.6-2.4 4.7 3.4c.6.4 1.2.1 1.4-.6l3.2-15c.2-.9-.4-1.4-1.2-1.1Z"/></svg>
+          <span>Telegram</span>
+        </a>
+        <a class="social" href="https://youtube.com/@tolkaivoda" target="_blank" rel="noopener">
+          <svg class="social__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 12s0-3.5-.4-5.1a2.7 2.7 0 0 0-1.9-1.9C18.9 4.5 12 4.5 12 4.5s-6.9 0-8.7.5A2.7 2.7 0 0 0 1.4 6.9 28 28 0 0 0 1 12c0 1.7.4 5.1.4 5.1a2.7 2.7 0 0 0 1.9 1.9c1.8.5 8.7.5 8.7.5s6.9 0 8.7-.5a2.7 2.7 0 0 0 1.9-1.9c.4-1.6.4-5.1.4-5.1Z"/><path class="yt-tri" d="M9.8 15.3V8.7l5.7 3.3z"/></svg>
+          <span>YouTube</span>
+        </a>
+        <a class="social" href="mailto:radio@tolkay-voda.ru">
+          <svg class="social__ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/></svg>
+          <span>radio@tolkay-voda.ru</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>© <span id="year"></span> Клан Толкай Вода</span>
+      <span class="footer__sep">·</span>
+      <a href="/privacy.html">Политика конфиденциальности</a>
+    </div>
+  </footer>
+
+  <!-- Аудио-элемент радио -->
+  <audio id="audio" preload="none" crossorigin="anonymous"></audio>
+
+  <script src="/js/radio.js" defer></script>
 </body>
 </html>

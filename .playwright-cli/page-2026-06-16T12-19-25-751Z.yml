@@ -1,0 +1,45 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e4]:
+      - img "Клан Толкай Вода — Слава моржам" [ref=e5]
+      - heading "Радио Толкай Вода" [level=1] [ref=e6]
+      - button "Слушать радио" [ref=e7] [cursor=pointer]:
+        - img [ref=e9]
+        - generic [ref=e11]: Слушать радио
+      - paragraph [ref=e12]: Круглосуточный эфир
+  - main [ref=e13]:
+    - generic [ref=e15]:
+      - paragraph [ref=e16]: Сейчас играет
+      - paragraph [ref=e17]: Нажмите «Слушать радио»
+      - paragraph [ref=e18]: Клан Толкай Вода
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - heading "Прогноз дня" [level=2] [ref=e22]
+        - heading [level=3]
+        - paragraph
+        - button "Читать полный прогноз" [ref=e23] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Читать полный прогноз
+      - img "Прогноз дня" [ref=e27]
+    - generic [ref=e28]:
+      - heading "Связь с кланом" [level=2] [ref=e29]
+      - paragraph [ref=e30]: Пишите нам — отвечаем за словом в карман не лезем.
+      - generic [ref=e31]:
+        - link "Telegram" [ref=e32] [cursor=pointer]:
+          - /url: https://t.me/klanTolkayvoda
+          - img [ref=e33]
+          - generic [ref=e35]: Telegram
+        - link "YouTube" [ref=e36] [cursor=pointer]:
+          - /url: https://youtube.com/@tolkaivoda
+          - img [ref=e37]
+          - generic [ref=e40]: YouTube
+        - link "radio@tolkay-voda.ru" [ref=e41] [cursor=pointer]:
+          - /url: mailto:radio@tolkay-voda.ru
+          - img [ref=e42]
+          - generic [ref=e45]: radio@tolkay-voda.ru
+  - contentinfo [ref=e46]:
+    - generic [ref=e47]:
+      - generic [ref=e48]: © 2026 Клан Толкай Вода
+      - generic [ref=e49]: ·
+      - link "Политика конфиденциальности" [ref=e50] [cursor=pointer]:
+        - /url: /privacy.html
