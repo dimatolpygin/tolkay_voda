@@ -57,7 +57,7 @@
 
 [hidden] { display: none !important; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
 
 body {
   margin: 0;
@@ -82,6 +82,26 @@ img { max-width: 100%; display: block; }
   color: var(--gold-2);
   margin: 0 0 14px;
 }
+
+/* ===== Шапка / навигация ===== */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  transition: background .25s ease, box-shadow .25s ease, backdrop-filter .25s ease;
+}
+.nav__inner { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+.nav__brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; flex: 0 0 auto; }
+.nav__brand img { border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+.nav__brand span {
+  font-family: var(--font-h); font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; font-size: 1.05rem; text-shadow: 0 2px 10px rgba(0,0,0,.4);
+}
+.nav__menu { display: flex; gap: 26px; list-style: none; margin: 0; padding: 0; }
+.nav__menu a {
+  color: #fff; text-decoration: none; font-weight: 600; font-size: .96rem;
+  opacity: .92; text-shadow: 0 2px 10px rgba(0,0,0,.4); transition: color .16s ease, opacity .16s ease;
+}
+.nav__menu a:hover { color: var(--gold); opacity: 1; }
+.nav--solid { background: rgba(14,24,34,.92); box-shadow: var(--shadow-sm); backdrop-filter: blur(8px); }
 
 /* ===== ХИРО ===== */
 .hero {
@@ -297,9 +317,23 @@ img { max-width: 100%; display: block; }
 .social:nth-child(3):hover .social__ic { stroke: #fff; }
 
 /* ===== Футер ===== */
-.footer { margin-top: 44px; padding: 26px 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 0.9rem; }
-.footer__inner { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.footer { margin-top: 44px; padding: 28px 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 0.9rem; }
+.footer__inner { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.footer__social { display: flex; gap: 12px; }
+.footer__ic {
+  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  background: #f4f6f8; border: 1px solid var(--line); transition: background .16s ease, transform .12s ease;
+}
+.footer__ic:hover { background: var(--gold); transform: translateY(-2px); }
+.footer__ic svg { width: 20px; height: 20px; fill: var(--gold-2); }
+.footer__ic .yt-tri { fill: #f4f6f8; }
+.footer__ic:hover svg { fill: #fff; }
+.footer__ic:hover .yt-tri { fill: var(--gold); }
+.footer__ic[aria-label="Электронная почта"] svg { fill: none; stroke: var(--gold-2); stroke-width: 1.8; }
+.footer__ic[aria-label="Электронная почта"]:hover svg { stroke: #fff; }
+.footer__legal { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .footer a { color: var(--ink-soft); }
+.footer__legal a:hover { color: var(--gold-2); }
 .footer__sep { opacity: .5; }
 
 /* ===== Модалка прогноза ===== */
@@ -334,7 +368,12 @@ img { max-width: 100%; display: block; }
 .post-view__date { color: var(--gold-2); font-weight: 600; font-size: .9rem; margin: 0 0 8px; }
 .post-view__title { font-family: var(--font-h); font-weight: 700; font-size: clamp(1.6rem, 5vw, 2.4rem); line-height: 1.05; margin: 0 0 18px; color: var(--ink); }
 .post-view__img { width: 100%; border-radius: 14px; box-shadow: var(--shadow-sm); margin: 0 0 22px; }
-.post-view__body { color: var(--ink); white-space: pre-line; font-size: 1.05rem; }
+.post-view__body { color: var(--ink); font-size: 1.05rem; }
+.post-view__body p { white-space: pre-line; margin: 0 0 14px; }
+.post-view__body h2 {
+  font-family: var(--font-h); font-weight: 700; font-size: 1.2rem; color: var(--gold-2);
+  text-transform: uppercase; letter-spacing: .02em; margin: 22px 0 8px;
+}
 .post-view__back { margin-top: 26px; }
 .post-view-state { max-width: 760px; margin: 40px auto; padding: 36px; text-align: center; }
 .post-view-state p { margin: 0 0 18px; color: var(--ink-soft); }
@@ -349,6 +388,10 @@ img { max-width: 100%; display: block; }
   .forecast__media { order: -1; }
   .blog__rail { grid-auto-columns: 78%; } /* ~1.2 карточки, скролл вправо */
   .blog__nav { display: none; } /* на мобилке только свайп */
+  .nav__inner { height: 54px; }
+  .nav__menu { gap: 16px; }
+  .nav__menu a { font-size: .88rem; }
+  .nav__brand span { display: none; } /* на мобилке только логотип */
 }
 @media (min-width: 761px) and (max-width: 920px) {
   .blog__rail { grid-auto-columns: calc((100% - 18px) / 2); } /* ~2 карточки */

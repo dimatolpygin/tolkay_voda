@@ -26,6 +26,33 @@
     view.hidden = true;
   }
 
+  // Рендер тела статьи: «## Заголовок» → подзаголовки, остальное — абзацы.
+  function renderBody(container, text) {
+    container.replaceChildren();
+    const blocks = String(text || '').replace(/\r\n/g, '\n').split(/\n{2,}/);
+    for (const block of blocks) {
+      if (!block.trim()) continue;
+      for (const line of block.split('\n')) {
+        const hm = /^##\s+(.*)$/.exec(line);
+        if (hm) {
+          const h = document.createElement('h2');
+          h.textContent = hm[1].trim();
+          container.append(h);
+        }
+      }
+      const para = block
+        .split('\n')
+        .filter((l) => !/^##\s+/.test(l))
+        .join('\n')
+        .trim();
+      if (para) {
+        const p = document.createElement('p');
+        p.textContent = para;
+        container.append(p);
+      }
+    }
+  }
+
   function render(p) {
     pvDate.textContent = formatDate(p.created_at);
     pvTitle.textContent = p.title || '';
@@ -34,7 +61,7 @@
       pvImage.alt = p.title || '';
       pvImage.hidden = false;
     }
-    pvBody.textContent = p.body || '';
+    renderBody(pvBody, p.body || '');
     document.title = `${p.title || 'Статья'} — Радио «Толкай Вода»`;
     view.hidden = false;
     state.hidden = true;
