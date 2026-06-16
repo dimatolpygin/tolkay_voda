@@ -10,7 +10,9 @@ import { buildTrackList } from './lib-tracks.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC = join(__dirname, '_unpacked');
 const MEDIA = join(__dirname, '..', 'public', 'media', 'audio');
-const MANIFEST = join(__dirname, '..', 'public', 'assets', 'tracks.json');
+// Локальный манифест отдельным файлом: dev-сервер предпочитает его,
+// прод использует tracks.json (CDN). Так реальный анализатор работает в обоих.
+const MANIFEST = join(__dirname, '..', 'public', 'assets', 'tracks.local.json');
 
 mkdirSync(MEDIA, { recursive: true });
 

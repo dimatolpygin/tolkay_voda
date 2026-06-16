@@ -5,6 +5,7 @@ data/*.db-*
 *.log
 .DS_Store
 public/media/
+public/assets/tracks.local.json
 scripts/_unpacked/
 scripts/_fonts/
 scripts/_shots/

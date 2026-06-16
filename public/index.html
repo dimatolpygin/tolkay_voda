@@ -100,8 +100,10 @@
     </div>
   </footer>
 
-  <!-- Аудио-элемент радио -->
-  <audio id="audio" preload="none" crossorigin="anonymous"></audio>
+  <!-- Аудио-элемент радио. Без crossorigin: воспроизведение mp3 с CDN работает
+       при любом CORS. Визуализатор — процедурный (не читает аудио-данные),
+       поэтому routing через WebAudio не нужен и звук не глушится. -->
+  <audio id="audio" preload="none"></audio>
 
   <script src="/js/radio.js" defer></script>
 </body>

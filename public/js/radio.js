@@ -68,12 +68,13 @@
 
   // ---- Кнопка ----
   playBtn.addEventListener('click', async () => {
-    ensureViz();
     if (!started) {
       started = true;
+      await initAudioGraph(); // включит анализатор, если CORS на CDN открыт
       await playNext();
       return;
     }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     if (audio.paused) {
       try { await audio.play(); } catch {}
     } else {
@@ -98,30 +99,41 @@
   });
 
   // ---- Визуализатор ----
+  // Адаптивный: если CDN отдаёт CORS-заголовки для нашего origin — подключаем
+  // реальный анализатор частот (дорожка бежит по музыке). Если нет — играем
+  // звук без WebAudio (чтобы cross-origin не заглушил) и рисуем процедурную
+  // дорожку. Проверка CORS делается до назначения src и crossOrigin.
   const ctx = canvas.getContext('2d');
+  let raf = null;
+  let audioCtx = null;
   let analyser = null;
   let freq = null;
-  let audioCtx = null;
-  let srcNode = null;
-  let raf = null;
 
-  function ensureViz() {
-    if (audioCtx) {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      return;
+  async function initAudioGraph() {
+    if (audioCtx || !tracks.length) return;
+    let corsOk = false;
+    try {
+      // строгий cors-запрос: если CDN не вернёт ACAO — fetch отклонится
+      const r = await fetch(tracks[0].url, { headers: { Range: 'bytes=0-1' } });
+      corsOk = r.ok || r.status === 206;
+    } catch {
+      corsOk = false;
     }
+    if (!corsOk) return; // оставляем процедурный режим, звук не трогаем
+
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       audioCtx = new AC();
-      srcNode = audioCtx.createMediaElementSource(audio);
+      audio.crossOrigin = 'anonymous'; // ДО первого src
+      const srcNode = audioCtx.createMediaElementSource(audio);
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 128;
-      analyser.smoothingTimeConstant = 0.8;
+      analyser.smoothingTimeConstant = 0.82;
       freq = new Uint8Array(analyser.frequencyBinCount);
       srcNode.connect(analyser);
       analyser.connect(audioCtx.destination);
     } catch {
-      analyser = null; // нет WebAudio — используем процедурную анимацию
+      analyser = null;
     }
   }
 
@@ -134,10 +146,11 @@
     ctx.clearRect(0, 0, w, h);
 
     const playing = !audio.paused && started;
+
+    // реальные частоты, если анализатор подключён и отдаёт данные
     let data = null;
     if (analyser) {
       analyser.getByteFrequencyData(freq);
-      // если данные пустые (CORS-ограничение CDN) — сработает fallback ниже
       if (freq.some((v) => v > 0)) data = freq;
     }
 
@@ -151,17 +164,21 @@
     for (let i = 0; i < BARS; i++) {
       let target;
       if (data) {
-        const idx = Math.floor((i / BARS) * data.length);
-        target = data[idx] / 255;
+        // реальный спектр (берём нижние 3/4 диапазона — там основная энергия)
+        const idx = Math.floor((i / BARS) * data.length * 0.75);
+        target = (data[idx] / 255) ** 0.9;
       } else if (playing) {
-        // процедурная «живая» дорожка
-        const t = ts / 380;
-        target = 0.18 + 0.5 * Math.abs(Math.sin(i * 0.5 + t)) * (0.6 + 0.4 * Math.sin(t * 1.7 + i));
-        target = Math.min(1, Math.max(0.05, target));
+        // процедурная «живая» дорожка: несколько синусоид разной частоты
+        const t = ts / 360;
+        const a = Math.sin(i * 0.45 + t);
+        const b = Math.sin(i * 0.17 - t * 1.6);
+        const c = Math.sin(i * 0.9 + t * 0.7);
+        target = 0.16 + 0.42 * Math.abs(a) + 0.22 * Math.abs(b) * Math.abs(c);
+        target = Math.min(1, Math.max(0.06, target));
       } else {
         target = 0.04;
       }
-      levels[i] += (target - levels[i]) * 0.35;
+      levels[i] += (target - levels[i]) * 0.3;
       const bh = Math.max(2, levels[i] * h);
       const x = i * (bw + gap);
       const y = (h - bh) / 2;
