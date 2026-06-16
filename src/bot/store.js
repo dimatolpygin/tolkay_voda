@@ -3,17 +3,18 @@ import { db } from '../lib/db.js';
 import { uniqueSlug } from '../lib/slug.js';
 
 const findForecastByDate = db.prepare('SELECT id FROM forecast WHERE date = ?');
+// Позиционные параметры (?) — node:sqlite надёжно работает с ними,
+// в отличие от именованных (@name).
 const insertForecast = db.prepare(
   `INSERT INTO forecast (date, title, summary, body, image_url, subtitle, intro, water, color, food, advice)
-   VALUES (@date, @title, @summary, @body, @image_url, @subtitle, @intro, @water, @color, @food, @advice)`
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 const updateForecast = db.prepare(
   `UPDATE forecast SET
-     title = @title, summary = @summary, body = @body,
-     image_url = COALESCE(@image_url, image_url),
-     subtitle = @subtitle, intro = @intro, water = @water,
-     color = @color, food = @food, advice = @advice
-   WHERE id = @id`
+     title = ?, summary = ?, body = ?,
+     image_url = COALESCE(?, image_url),
+     subtitle = ?, intro = ?, water = ?, color = ?, food = ?, advice = ?
+   WHERE id = ?`
 );
 
 const postSlugExists = db.prepare('SELECT 1 FROM posts WHERE slug = ?');
@@ -43,10 +44,17 @@ export function upsertForecast(f) {
 
   const existing = findForecastByDate.get(date);
   if (existing) {
-    updateForecast.run({ ...row, id: existing.id });
+    updateForecast.run(
+      row.title, row.summary, row.body, row.image_url,
+      row.subtitle, row.intro, row.water, row.color, row.food, row.advice,
+      existing.id
+    );
     return { id: existing.id, date, updated: true };
   }
-  const info = insertForecast.run(row);
+  const info = insertForecast.run(
+    row.date, row.title, row.summary, row.body, row.image_url,
+    row.subtitle, row.intro, row.water, row.color, row.food, row.advice
+  );
   return { id: Number(info.lastInsertRowid), date, updated: false };
 }
 
