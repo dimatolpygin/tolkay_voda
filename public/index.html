@@ -10,7 +10,8 @@
   <link rel="icon" type="image/webp" href="/assets/img/logo.webp" />
   <link rel="preload" href="/assets/fonts/oswald-v57-cyrillic_latin-700.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/inter-v20-cyrillic_latin-regular.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" as="image" href="/assets/img/bg-desktop.webp" />
+  <link rel="preload" as="image" href="/assets/img/bg-desktop.webp" media="(min-width: 761px)" />
+  <link rel="preload" as="image" href="/assets/img/bg-mobile.webp" media="(max-width: 760px)" />
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
@@ -18,7 +19,7 @@
   <header class="hero">
     <div class="hero__overlay"></div>
     <div class="hero__inner">
-      <img class="hero__logo" src="/assets/img/logo.webp" width="170" height="170"
+      <img class="hero__logo" src="/assets/img/logo.webp" width="250" height="250"
            alt="Клан Толкай Вода — Слава моржам" />
       <h1 class="hero__title">Радио Толкай Вода</h1>
 
