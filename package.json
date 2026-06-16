@@ -13,6 +13,7 @@
     "bot": "node src/bot/index.js",
     "upload:tracks": "node scripts/upload-tracks.js",
     "seed:forecast": "node scripts/seed-forecast.js",
+    "seed:posts": "node scripts/seed-posts.js",
     "test": "node --test"
   },
   "dependencies": {

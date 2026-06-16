@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Статья — Радио «Толкай Вода»</title>
+  <meta name="description" content="Статья блога клана Толкай Вода." />
+  <meta name="theme-color" content="#0e1822" />
+
+  <link rel="icon" type="image/webp" href="/assets/img/logo.webp" />
+  <link rel="preload" href="/assets/fonts/oswald-v57-cyrillic_latin-700.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/inter-v20-cyrillic_latin-regular.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="article-page">
+  <header class="article-bar">
+    <div class="container article-bar__inner">
+      <a class="article-bar__home" href="/">
+        <img src="/assets/img/logo.webp" width="40" height="40" alt="Клан Толкай Вода" />
+        <span>Радио Толкай Вода</span>
+      </a>
+      <a class="article-bar__back" href="/#blog">К блогу</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <article class="post-view card" id="postView" hidden>
+      <p class="post-view__date" id="pvDate"></p>
+      <h1 class="post-view__title" id="pvTitle"></h1>
+      <img class="post-view__img" id="pvImage" src="" alt="" hidden />
+      <div class="post-view__body" id="pvBody"></div>
+      <a class="btn-outline post-view__back" href="/#blog">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        Все статьи блога
+      </a>
+    </article>
+
+    <div class="post-view-state card" id="postState" hidden>
+      <p id="psText">Загрузка…</p>
+      <a class="btn-outline" href="/#blog">Вернуться к блогу</a>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <span>© <span id="year"></span> Клан Толкай Вода</span>
+      <span class="footer__sep">·</span>
+      <a href="/privacy.html">Политика конфиденциальности</a>
+    </div>
+  </footer>
+
+  <script src="/js/post.js" defer></script>
+</body>
+</html>
