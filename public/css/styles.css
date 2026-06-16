@@ -318,19 +318,7 @@ img { max-width: 100%; display: block; }
 
 /* ===== Футер ===== */
 .footer { margin-top: 44px; padding: 28px 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 0.9rem; }
-.footer__inner { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.footer__social { display: flex; gap: 12px; }
-.footer__ic {
-  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
-  background: #f4f6f8; border: 1px solid var(--line); transition: background .16s ease, transform .12s ease;
-}
-.footer__ic:hover { background: var(--gold); transform: translateY(-2px); }
-.footer__ic svg { width: 20px; height: 20px; fill: var(--gold-2); }
-.footer__ic .yt-tri { fill: #f4f6f8; }
-.footer__ic:hover svg { fill: #fff; }
-.footer__ic:hover .yt-tri { fill: var(--gold); }
-.footer__ic[aria-label="Электронная почта"] svg { fill: none; stroke: var(--gold-2); stroke-width: 1.8; }
-.footer__ic[aria-label="Электронная почта"]:hover svg { stroke: #fff; }
+.footer__inner { display: flex; justify-content: center; }
 .footer__legal { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .footer a { color: var(--ink-soft); }
 .footer__legal a:hover { color: var(--gold-2); }
