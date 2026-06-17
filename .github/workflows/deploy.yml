@@ -27,5 +27,9 @@ jobs:
             git fetch --all
             git reset --hard origin/master
             docker compose up -d --build
+            # Caddyfile примонтирован одним файлом: git меняет inode, а работающий
+            # контейнер держит старый. Пересоздаём caddy, чтобы перецепить новый
+            # конфиг (icecast/liquidsoap не трогаем — эфир не прерывается).
+            docker compose up -d --force-recreate caddy
             docker image prune -f
             echo "Деплой завершён: $(git rev-parse --short HEAD)"
