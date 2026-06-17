@@ -1,5 +1,5 @@
 // Блог: горизонтальная лента статей со скроллом вправо.
-// Данные из /api/posts (одной лентой). Клик по карточке → /post.html?slug=...
+// Данные из /api/posts (одной лентой). Клик по карточке → /blog/:slug (ЧПУ)...
 (() => {
   const section = document.getElementById('blog');
   if (!section) return;
@@ -21,7 +21,7 @@
   function card(p) {
     const a = document.createElement('a');
     a.className = 'post';
-    a.href = `/post.html?slug=${encodeURIComponent(p.slug)}`;
+    a.href = `/blog/${encodeURIComponent(p.slug)}`;
 
     const img = document.createElement('img');
     img.className = 'post__img';

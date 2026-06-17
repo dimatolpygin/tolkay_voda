@@ -69,7 +69,9 @@
     state.hidden = true;
   }
 
-  const slug = new URLSearchParams(location.search).get('slug');
+  // slug из ЧПУ /blog/:slug либо из старой ссылки /post.html?slug=
+  const pathSlug = (location.pathname.match(/^\/blog\/([^/?#]+)/) || [])[1];
+  const slug = pathSlug ? decodeURIComponent(pathSlug) : new URLSearchParams(location.search).get('slug');
   if (!slug) {
     showState('Статья не указана.');
     return;

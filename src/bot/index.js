@@ -244,7 +244,7 @@ bot.callbackQuery('publish', async (ctx) => {
       const r = createPost({ ...st.prepared, imageUrl });
       logger.info(`Статья создана (id ${r.id}, slug ${r.slug}).`);
       clearState(who(ctx).id);
-      await reply(ctx, `Статья опубликована: «${st.prepared.title}». Открыть: /post.html?slug=${r.slug}`);
+      await reply(ctx, `Статья опубликована: «${st.prepared.title}». Открыть: https://tolkay-voda.ru/blog/${r.slug}`);
     }
   } catch (e) {
     logger.error(`Ошибка публикации: ${e.message}`);

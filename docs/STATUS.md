@@ -4,9 +4,9 @@
 > прочтения **обязательно** сверить с реальностью: `git tag -l "stage-*"`,
 > `git log --oneline -20` — таблица ниже может быть устаревшей.
 
-**Последнее обновление**: 2026-06-17 (этап 10 закрыт — редактирование контента через бота)
-**Текущий этап**: **этап 11 — живой эфир (Icecast + Liquidsoap)** 🚧. Майлстоун 2: 10 ✅, 11 в работе, 12 впереди.
-**Следующий шаг**: реализовать единый аудиопоток (Icecast + Liquidsoap, источник с CDN, выход 128k), джукбокс — фолбэк.
+**Последнее обновление**: 2026-06-18 (этап 11 закрыт — живой эфир Icecast + Liquidsoap)
+**Текущий этап**: **этап 12 — SEO под капотом** 🚧. Майлстоун 2: 10 ✅, 11 ✅, 12 в работе (последний).
+**Следующий шаг**: robots.txt + динамический sitemap.xml + OG/Twitter + серверные мета статей (/blog/:slug) + JSON-LD + canonical.
 
 ---
 
@@ -28,18 +28,19 @@
 | 9 | Прод-деплой | ✅ | `stage-9-done` | — | 2026-06-17 |
 | | **Майлстоун 2 — пост-MVP правки** | | | | |
 | 10 | Редактирование контента (бот) | ✅ | `stage-10-done` | 8b9ce54 | 2026-06-17 |
-| 11 | Живой эфир (Icecast+Liquidsoap) | 🚧 | `stage-11-done` | — | — |
-| 12 | SEO под капотом | ☐ | `stage-12-done` | — | — |
+| 11 | Живой эфир (Icecast+Liquidsoap) | ✅ | `stage-11-done` | e816e34 | 2026-06-18 |
+| 12 | SEO под капотом | 🚧 | `stage-12-done` | — | — |
 
 Детальные критерии приёмки каждого этапа — в [`07_ROADMAP.md`](07_ROADMAP.md).
 
 ## Активная работа
 
-**Этап 11 — Живой эфир (Icecast + Liquidsoap)** 🚧. Стек: Liquidsoap тянет треки с CDN
-(плейлист из `tracks.json`) → один 128k MP3 → Icecast раздаёт всем; Caddy проксирует `/stream`
-и now-playing; `radio.js` — основной режим `<audio src=/stream>` + фолбэк на джукбокс.
-Новые сервисы в docker-compose (icecast + liquidsoap). Верификация: два устройства слышат одно
-и то же, новый слушатель входит «с середины»; локально `docker compose` поднимает поток.
+**Этап 12 — SEO под капотом** 🚧. Техническое SEO без видимых изменений на странице:
+`public/robots.txt`, динамический `GET /sitemap.xml` из БД, Open Graph/Twitter на index+privacy,
+серверный маршрут ЧПУ `/blog/:slug` с подстановкой мета статьи (title/description/og:image/canonical),
+JSON-LD (Organization/RadioStation + Article), canonical на всех публичных страницах.
+**Ветка**: `dev` (прод-ветка `master`, деплой `/opt/tolkay_voda`).
+Прод: https://tolkay-voda.ru — сайт + живой эфир `/stream` (Icecast+Liquidsoap) + бот @tolkayvodabot.
 **Ветка**: `dev` (прод-ветка `master`, деплой `/opt/tolkay_voda`)
 Прод: https://tolkay-voda.ru (сервер 159.194.201.64, docker-compose: app+caddy+bot, SQLite). Бот @tolkayvodabot.
 
@@ -48,6 +49,8 @@
 Нет.
 
 ## История закрытий
+
+- 2026-06-18 — Этап 11: Живой эфир (Icecast + Liquidsoap) — tag stage-11-done — единый синхронный поток на всех слушателей вместо джукбокса. Liquidsoap (`docker/liquidsoap/radio.liq`, образ savonet/liquidsoap:v2.2.5) тянет треки **с CDN** (плейлист `playlist.m3u` из `tracks.json` через `scripts/gen-stream-playlist.js`, annotate-метаданные), randomize+crossfade+mksafe → один MP3 128k → Icecast (`docker/icecast/`, Alpine, пароли из env через envsubst, changeowner на icecast, CORS, burst-on-connect для быстрого старта с live-точки). Caddy: `handle /stream` → icecast (flush_interval -1). `src/routes/stream.js`: `/api/stream/now` (now-playing из status-json, чистка битых ICY-кириллических метаданных → бренд). `radio.js`: основной режим `<audio src=/stream>` + поллинг now-playing + автофолбэк на джукбокс при недоступном эфире. Проверено на сервере end-to-end: `/stream` отдаёт audio/mpeg, источник подключён, listeners считаются; CPU liquidsoap ~6.7% / 138 МБ, icecast ~2 МБ, запас RAM ~1.2 ГБ. CDN-стоимость ~80 ГБ/мес (~48 ₽), не зависит от числа слушателей. По ходу исправлено: Icecast под root → changeowner; бинд-маунт одного Caddyfile держал старый inode после `git reset` → деплой теперь `--force-recreate caddy` (deploy.yml). Браузерная проверка клиентом — ок («вроде работает»). Прод-коммит e816e34.
 
 - 2026-06-17 — Этап 10: Редактирование контента через бота — tag stage-10-done — в боте появился вход «Редактировать» (кнопка в `/start` + команда `/edit`) → выбор «Прогнозы/Статьи» → список последних 10 записей инлайн-кнопками → меню полей. Статья: заголовок / текст (с пересборкой анонса) / фото. Прогноз: вводка / Вода / Цвет / Еда / Совет / лунный день / фото, плюс «Текст заново (ИИ)» — переработка сырого текста через OpenAI. Удаление — с подтверждением. `src/bot/store.js`: listRecent*/getById/updatePostField/updateForecastField (whitelist колонок — защита от инъекции имён), reprocessForecast, deletePost/deleteForecast; store-функции прогнаны на временной БД (CRUD, whitelist отбивает `slug`). Доступ — существующий whitelist-middleware. Логи правок/удалений на русском (id записи, поле, кто). Дополнительно: меню команд слева через `setMyCommands` (start/edit/help/cancel). Проверено клиентом вживую в проде (@tolkayvodabot) после мержа в master (8b9ce54).
 
