@@ -28,7 +28,8 @@ const esc = (s) =>
 
 // Абсолютный URL картинки для og:image.
 function absImage(url) {
-  if (!url) return `${BASE}/assets/img/logo.webp`;
+  // Фолбэк — JPEG-карточка (Telegram не показывает WebP в превью).
+  if (!url) return `${BASE}/assets/img/og-cover.jpg`;
   if (/^https?:\/\//i.test(url)) return url;
   return BASE + (url.startsWith('/') ? url : '/' + url);
 }
