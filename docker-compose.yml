@@ -17,6 +17,7 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       DB_PATH: /app/data/app.db
+      ICECAST_HOST: icecast
     volumes:
       - app-data:/app/data
     expose:
@@ -38,6 +39,32 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+
+  # Единый эфир: Icecast раздаёт один поток всем слушателям.
+  icecast:
+    build: ./docker/icecast
+    image: tolkay-voda-icecast
+    container_name: tolkay-icecast
+    restart: unless-stopped
+    environment:
+      ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD:?задайте ICECAST_SOURCE_PASSWORD в .env}
+      ICECAST_ADMIN_PASSWORD: ${ICECAST_ADMIN_PASSWORD:?задайте ICECAST_ADMIN_PASSWORD в .env}
+    expose:
+      - "8000"
+
+  # Источник эфира: тянет треки с CDN → один 128k MP3-поток в Icecast.
+  liquidsoap:
+    image: savonet/liquidsoap:v2.2.5
+    container_name: tolkay-liquidsoap
+    restart: unless-stopped
+    depends_on:
+      - icecast
+    environment:
+      ICECAST_HOST: icecast
+      ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD:?задайте ICECAST_SOURCE_PASSWORD в .env}
+    volumes:
+      - ./docker/liquidsoap:/etc/liquidsoap:ro
+    command: ["liquidsoap", "/etc/liquidsoap/radio.liq"]
 
   bot:
     build: .
