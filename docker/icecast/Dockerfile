@@ -2,7 +2,7 @@
 # Конфиг — шаблон с подстановкой паролей из окружения при старте (envsubst).
 FROM alpine:3.20
 
-RUN apk add --no-cache icecast gettext
+RUN apk add --no-cache icecast gettext mailcap
 
 COPY icecast.xml /etc/icecast.xml.tmpl
 COPY entrypoint.sh /entrypoint.sh

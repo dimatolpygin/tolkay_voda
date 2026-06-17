@@ -10,4 +10,5 @@ envsubst '${ICECAST_SOURCE_PASSWORD} ${ICECAST_ADMIN_PASSWORD}' \
   < /etc/icecast.xml.tmpl > /etc/icecast.xml
 
 mkdir -p /var/log/icecast
+chown -R icecast:icecast /var/log/icecast
 exec icecast -c /etc/icecast.xml

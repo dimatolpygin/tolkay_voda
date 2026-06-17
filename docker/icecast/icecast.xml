@@ -53,5 +53,10 @@
 
     <security>
         <chroot>0</chroot>
+        <!-- Icecast стартует под root в контейнере и сбрасывает привилегии. -->
+        <changeowner>
+            <user>icecast</user>
+            <group>icecast</group>
+        </changeowner>
     </security>
 </icecast>
