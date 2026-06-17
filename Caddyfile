@@ -1,0 +1,16 @@
+# Reverse-proxy на app-контейнер.
+#   Локально: SITE_DOMAIN=":80"          → HTTP без TLS (http://localhost)
+#   Прод:     SITE_DOMAIN="tolkay-voda.ru" → авто-HTTPS (Let's Encrypt)
+#
+# Сайт живёт на отдельном сервере, поэтому Caddy единолично владеет 80/443
+# и не конфликтует с прокси n8n (n8n.tolkay-voda.ru — на своей машине).
+
+{$SITE_DOMAIN::80} {
+	encode zstd gzip
+	reverse_proxy app:3000
+
+	log {
+		output stdout
+		format console
+	}
+}

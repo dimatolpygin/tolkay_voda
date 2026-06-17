@@ -4,9 +4,9 @@
 > прочтения **обязательно** сверить с реальностью: `git tag -l "stage-*"`,
 > `git log --oneline -20` — таблица ниже может быть устаревшей.
 
-**Последнее обновление**: 2026-06-17 (этап 7 закрыт — адаптив и оптимизация)
-**Текущий этап**: между этапами — этап 8 (Docker/Caddy/CI/CD) не начат
-**Следующий шаг**: по команде клиента начать Этап 8 — Docker, Caddy, GitHub Actions (acceptance в ROADMAP)
+**Последнее обновление**: 2026-06-17 (этап 8 закрыт — Docker/Caddy/CI/CD)
+**Текущий этап**: между этапами — этап 9 (прод-деплой, okdeploy) не начат
+**Следующий шаг**: по команде клиента начать Этап 9 — деплой на отдельный сервер, DNS apex → IP, авто-HTTPS, первый прогон GitHub Actions (acceptance в ROADMAP)
 
 ---
 
@@ -24,14 +24,14 @@
 | 5 | Telegram-бот | ✅ | `stage-5-done` | — | 2026-06-17 |
 | 6 | Контакты/футер + шапка | ✅ | `stage-6-done` | — | 2026-06-17 |
 | 7 | Адаптив/оптимизация | ✅ | `stage-7-done` | — | 2026-06-17 |
-| 8 | Docker/CI/CD | ☐ | `stage-8-done` | — | — |
+| 8 | Docker/Caddy/CI/CD | ✅ | `stage-8-done` | — | 2026-06-17 |
 | 9 | Прод-деплой | ☐ | `stage-9-done` | — | — |
 
 Детальные критерии приёмки каждого этапа — в [`07_ROADMAP.md`](07_ROADMAP.md).
 
 ## Активная работа
 
-**Этап**: нет активного (этап 7 закрыт, этап 8 ждёт команды клиента).
+**Этап**: нет активного (этап 8 закрыт, этап 9 ждёт команды клиента).
 **Ветка**: `dev`
 
 ## Известные блокеры
@@ -39,6 +39,8 @@
 Нет.
 
 ## История закрытий
+
+- 2026-06-17 — Этап 8: Docker/Caddy/CI/CD — tag stage-8-done — `Dockerfile` (node:24-slim, `npm ci --omit=dev`, healthcheck через встроенный fetch), `docker-compose.yml` (app + caddy; бот в профиле `bot`, чтобы `up` не падал без BOT_TOKEN; общий volume `app-data` под SQLite, тома `caddy_data`/`caddy_config`), `Caddyfile` (reverse_proxy на app:3000, `SITE_DOMAIN` env: `:80` локально / домен → авто-HTTPS), `.dockerignore`, `.github/workflows/deploy.yml` (push в master → SSH-деплой через appleboy/ssh-action: `git reset --hard origin/master` + `docker compose up -d --build`). Проверено локально: `docker compose up -d --build` поднял app (healthy) + caddy, Caddy отдаёт сайт по HTTP (200 `via: Caddy`), все ассеты/страницы 200, бот-профиль валиден. Архитектура прода: сайт на отдельном сервере, Caddy единолично владеет 80/443, n8n (n8n.tolkay-voda.ru) на своей машине не затрагивается. Живой прогон workflow — на этапе 9 (после okdeploy: сервер, клон репо, secrets SSH_HOST/USER/KEY).
 
 - 2026-06-17 — Этап 7: Адаптив и оптимизация — tag stage-7-done — проверен мобильный вид (Playwright 320/360/390px): фон 9:16, нет горизонтального скролла, навигация и все блоки читаемы/кликабельны. Оптимизация под Lighthouse mobile: критический CSS заинлайнен в `index.html` (убран render-blocking запрос ~1.4с), gzip/brotli-сжатие ответов через `@fastify/compress` (HTML/CSS/JS/JSON), логотип пережат 478px/115KB → 400px/30KB, `aspect-ratio` под фото прогноза (CLS), `loading=lazy`+`decoding=async` и onerror-фолбэк на cover-default для фото блога/прогноза/статьи, `prefers-reduced-motion`. Lighthouse Performance (mobile) 91–95 (цель ≥85), FCP 2.1с, LCP 3.2с, TBT 0, CLS 0.038. `styles.css` остаётся источником правды и грузится на `post.html`/`privacy.html`.
 

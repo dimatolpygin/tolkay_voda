@@ -1,0 +1,36 @@
+# Зависимости ставятся в образе через npm ci
+node_modules
+
+# Локальные данные/секреты/логи
+.env
+.env.*
+data
+*.log
+
+# Git и CI
+.git
+.gitignore
+.github
+
+# Инфраструктура (не нужна внутри app-образа)
+Dockerfile
+.dockerignore
+docker-compose.yml
+Caddyfile
+caddy_data
+caddy_config
+
+# Документация и рабочие артефакты
+docs
+README.md
+.playwright-cli
+shot-*.png
+
+# Локальные mp3 (в проде аудио раздаётся с CDN) и dev-манифест
+public/media
+public/assets/tracks.local.json
+
+# Временные каталоги скриптов
+scripts/_unpacked
+scripts/_fonts
+scripts/_shots

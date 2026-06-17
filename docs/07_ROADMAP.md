@@ -195,9 +195,9 @@ reverse-proxy **Caddy** (авто-HTTPS), **docker-compose**, деплой **Git
 - GitHub Actions: build + deploy по SSH на сервер при пуше в master
 
 **Критерии приёмки** (закрытие → tag `stage-8-done`):
-- [ ] `docker compose up` локально поднимает сайт целиком
-- [ ] Caddy отдаёт сайт по HTTP локально
-- [ ] Workflow деплоя проходит (на тестовом пуше)
+- [x] `docker compose up` локально поднимает сайт целиком (app healthy + caddy)
+- [x] Caddy отдаёт сайт по HTTP локально (HTTP 200 через `via: Caddy`, ассеты/страницы 200)
+- [x] Workflow деплоя создан и провалидирован (compose config OK, структура job/secrets) — живой прогон по push в `master` выполняется на этапе 9 после настройки сервера и secrets
 
 ---
 

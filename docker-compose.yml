@@ -1,0 +1,61 @@
+# Стек сайта «Толкай Вода»: app (Fastify) + caddy (reverse-proxy, авто-HTTPS).
+# Бот вынесен в профиль "bot" — основной `docker compose up` поднимает сайт,
+# не падая из-за отсутствующего BOT_TOKEN. Бот: `docker compose --profile bot up -d`.
+#
+# Локально (HTTP): SITE_DOMAIN не задан → Caddy слушает :80 → http://localhost
+# Прод (HTTPS):    SITE_DOMAIN=tolkay-voda.ru, SSL_EMAIL=... → авто-Let's Encrypt
+
+services:
+  app:
+    build: .
+    image: tolkay-voda-app
+    container_name: tolkay-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DB_PATH: /app/data/app.db
+    volumes:
+      - app-data:/app/data
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: tolkay-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # ":80" по умолчанию = локальный HTTP без TLS. В проде: SITE_DOMAIN=tolkay-voda.ru
+      SITE_DOMAIN: ${SITE_DOMAIN:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  bot:
+    build: .
+    image: tolkay-voda-app
+    container_name: tolkay-bot
+    restart: unless-stopped
+    profiles: ["bot"]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DB_PATH: /app/data/app.db
+    volumes:
+      - app-data:/app/data
+    depends_on:
+      - app
+    command: ["node", "src/bot/index.js"]
+
+volumes:
+  app-data:
+  caddy_data:
+  caddy_config:
