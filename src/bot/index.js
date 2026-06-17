@@ -3,7 +3,19 @@
 import { Bot, InlineKeyboard } from 'grammy';
 import { config } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
-import { upsertForecast, createPost } from './store.js';
+import {
+  upsertForecast,
+  createPost,
+  listRecentForecasts,
+  listRecentPosts,
+  getForecast,
+  getPost,
+  updateForecastField,
+  updatePostField,
+  reprocessForecast,
+  deleteForecast,
+  deletePost,
+} from './store.js';
 import { largestPhoto, uploadTelegramPhoto } from './media.js';
 import { prepareForecast, prepareForecastFallback, aiEnabled } from '../lib/ai.js';
 
@@ -48,17 +60,91 @@ async function reply(ctx, text, extra) {
 const kbType = () =>
   new InlineKeyboard()
     .text('Прогноз дня', 'type:forecast')
-    .text('Статья в блог', 'type:post');
+    .text('Статья в блог', 'type:post')
+    .row()
+    .text('Редактировать', 'edit:menu');
 const kbPhoto = () =>
   new InlineKeyboard().text('Без фото', 'photo:skip').text('Отмена', 'cancel');
 const kbPublish = () =>
   new InlineKeyboard().text('Опубликовать', 'publish').text('Отмена', 'cancel');
+
+// --- Клавиатуры редактирования ---
+const kbEditMenu = () =>
+  new InlineKeyboard()
+    .text('Прогнозы', 'edit:list:forecast')
+    .text('Статьи', 'edit:list:post');
+
+// Список записей: по кнопке на запись + «Отмена».
+function kbEditList(type, rows) {
+  const kb = new InlineKeyboard();
+  for (const r of rows) {
+    const label = type === 'forecast' ? labelForecast(r) : labelPost(r);
+    kb.text(label, `edit:pick:${type}:${r.id}`).row();
+  }
+  kb.text('Отмена', 'cancel');
+  return kb;
+}
+
+// Меню полей выбранной записи.
+function kbEditFields(type, id) {
+  const kb = new InlineKeyboard();
+  if (type === 'forecast') {
+    kb.text('Текст заново (ИИ)', `edit:field:forecast:${id}:raw`).row()
+      .text('Вводка', `edit:field:forecast:${id}:intro`)
+      .text('Вода', `edit:field:forecast:${id}:water`).row()
+      .text('Цвет', `edit:field:forecast:${id}:color`)
+      .text('Еда', `edit:field:forecast:${id}:food`).row()
+      .text('Совет', `edit:field:forecast:${id}:advice`)
+      .text('Лунный день', `edit:field:forecast:${id}:subtitle`).row()
+      .text('Фото', `edit:field:forecast:${id}:image_url`).row()
+      .text('Удалить', `edit:del:forecast:${id}`)
+      .text('Отмена', 'cancel');
+  } else {
+    kb.text('Заголовок', `edit:field:post:${id}:title`)
+      .text('Текст', `edit:field:post:${id}:body`).row()
+      .text('Фото', `edit:field:post:${id}:image_url`).row()
+      .text('Удалить', `edit:del:post:${id}`)
+      .text('Отмена', 'cancel');
+  }
+  return kb;
+}
+
+const kbDelConfirm = (type, id) =>
+  new InlineKeyboard()
+    .text('Да, удалить', `edit:delyes:${type}:${id}`)
+    .text('Отмена', 'cancel');
+
+function labelForecast(r) {
+  const d = fmtDate(r.date);
+  const sub = (r.subtitle || '').slice(0, 28);
+  return sub ? `${d} · ${sub}` : `${d} · прогноз`;
+}
+function labelPost(r) {
+  const t = (r.title || 'без заголовка').slice(0, 40);
+  return `${fmtDate(r.created_at)} · ${t}`;
+}
+
+// Человекочитаемые названия полей для подсказок.
+const FIELD_RU = {
+  raw: 'полный текст прогноза (перепишу через ИИ)',
+  intro: 'вводку (краткое описание дня)',
+  water: 'Воду дня',
+  color: 'Цвет дня',
+  food: 'Еду дня',
+  advice: 'Совет дня',
+  subtitle: 'строку лунного дня',
+  title: 'заголовок',
+  body: 'текст статьи',
+  image_url: 'фото',
+};
 
 const HELP = [
   'Бот клана «Толкай Вода». Публикую контент на сайте.',
   '',
   'Нажмите /start и выберите, что добавить: прогноз дня или статью в блог.',
   'Дальше я проведу по шагам: текст → фото → предпросмотр → публикация.',
+  '',
+  '/edit — отредактировать или удалить уже опубликованный прогноз или статью.',
 ].join('\n');
 
 // --- Логирование входящих ---
@@ -93,6 +179,10 @@ bot.command(['start', 'add'], (ctx) => {
 bot.command('cancel', (ctx) => {
   clearState(who(ctx).id);
   return reply(ctx, 'Отменено. Нажмите /start, чтобы начать заново.');
+});
+bot.command('edit', (ctx) => {
+  clearState(who(ctx).id);
+  return reply(ctx, 'Что отредактировать?', { reply_markup: kbEditMenu() });
 });
 
 // --- Выбор типа ---
@@ -162,11 +252,142 @@ bot.callbackQuery('publish', async (ctx) => {
   }
 });
 
+// --- Редактирование: навигация по callback ---
+bot.callbackQuery('edit:menu', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  clearState(who(ctx).id);
+  await reply(ctx, 'Что отредактировать?', { reply_markup: kbEditMenu() });
+});
+
+bot.callbackQuery(/^edit:list:(forecast|post)$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const type = ctx.match[1];
+  const rows = type === 'forecast' ? listRecentForecasts(10) : listRecentPosts(10);
+  if (!rows.length) {
+    return reply(ctx, type === 'forecast' ? 'Прогнозов пока нет.' : 'Статей пока нет.');
+  }
+  await reply(ctx, `Выберите запись (последние ${rows.length}):`, {
+    reply_markup: kbEditList(type, rows),
+  });
+});
+
+bot.callbackQuery(/^edit:pick:(forecast|post):(\d+)$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const type = ctx.match[1];
+  const id = Number(ctx.match[2]);
+  const rec = type === 'forecast' ? getForecast(id) : getPost(id);
+  if (!rec) return reply(ctx, 'Запись не найдена (возможно, удалена). /edit — начать заново.');
+  setState(who(ctx).id, { mode: 'edit', editType: type, editId: id, step: 'menu' });
+  const summary =
+    type === 'forecast'
+      ? `Прогноз ${fmtDate(rec.date)}${rec.subtitle ? ' · ' + rec.subtitle : ''}`
+      : `Статья: «${rec.title}»`;
+  await reply(ctx, `${summary}\nЧто меняем?`, { reply_markup: kbEditFields(type, id) });
+});
+
+bot.callbackQuery(/^edit:field:(forecast|post):(\d+):(\w+)$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const type = ctx.match[1];
+  const id = Number(ctx.match[2]);
+  const field = ctx.match[3];
+  const rec = type === 'forecast' ? getForecast(id) : getPost(id);
+  if (!rec) return reply(ctx, 'Запись не найдена. /edit — начать заново.');
+  const kbCancel = new InlineKeyboard().text('Отмена', 'cancel');
+  if (field === 'image_url') {
+    setState(who(ctx).id, { mode: 'edit', editType: type, editId: id, editField: field, step: 'await_photo' });
+    return reply(ctx, 'Пришлите новое фото для этой записи.', { reply_markup: kbCancel });
+  }
+  setState(who(ctx).id, { mode: 'edit', editType: type, editId: id, editField: field, step: 'await_value' });
+  return reply(ctx, `Пришлите новое значение: ${FIELD_RU[field] || field}.`, { reply_markup: kbCancel });
+});
+
+bot.callbackQuery(/^edit:del:(forecast|post):(\d+)$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const type = ctx.match[1];
+  const id = Number(ctx.match[2]);
+  await reply(ctx, 'Удалить запись безвозвратно?', { reply_markup: kbDelConfirm(type, id) });
+});
+
+bot.callbackQuery(/^edit:delyes:(forecast|post):(\d+)$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const type = ctx.match[1];
+  const id = Number(ctx.match[2]);
+  const changes = type === 'forecast' ? deleteForecast(id) : deletePost(id);
+  clearState(who(ctx).id);
+  if (!changes) return reply(ctx, 'Запись уже отсутствует.');
+  logger.info(`Удалено: ${type} id ${id} (@${who(ctx).username}).`);
+  await reply(ctx, type === 'forecast' ? 'Прогноз удалён с сайта.' : 'Статья удалена с сайта.');
+});
+
+// Применение правки текстового поля.
+async function applyEditText(ctx, st, text) {
+  const value = (text || '').trim();
+  if (!value) return reply(ctx, 'Пустое значение. Пришлите текст ещё раз.');
+  const { editType, editId, editField } = st;
+  const rec = editType === 'forecast' ? getForecast(editId) : getPost(editId);
+  if (!rec) {
+    clearState(who(ctx).id);
+    return reply(ctx, 'Запись не найдена. /edit — начать заново.');
+  }
+  try {
+    if (editType === 'forecast' && editField === 'raw') {
+      let prepared;
+      try {
+        prepared = aiEnabled() ? await prepareForecast(value) : prepareForecastFallback(value);
+      } catch (e) {
+        logger.error(`ИИ-выжимка не удалась: ${e.message}`);
+        prepared = prepareForecastFallback(value);
+      }
+      reprocessForecast(editId, prepared);
+      logger.info(`Прогноз id ${editId} переработан через ИИ (@${who(ctx).username}).`);
+    } else if (editType === 'forecast') {
+      updateForecastField(editId, editField, value);
+      logger.info(`Прогноз id ${editId}: поле ${editField} обновлено (@${who(ctx).username}).`);
+    } else {
+      updatePostField(editId, editField, value);
+      logger.info(`Статья id ${editId}: поле ${editField} обновлено (@${who(ctx).username}).`);
+    }
+  } catch (e) {
+    logger.error(`Ошибка правки: ${e.message}`);
+    return reply(ctx, `Не удалось сохранить: ${e.message}`);
+  }
+  clearState(who(ctx).id);
+  return reply(ctx, 'Готово, изменения сохранены и уже на сайте. /edit — править ещё.');
+}
+
+// Применение нового фото к записи.
+async function applyEditPhoto(ctx, st, photoFileId) {
+  if (!photoFileId) return reply(ctx, 'Не вижу фото. Пришлите изображение.');
+  const { editType, editId } = st;
+  const rec = editType === 'forecast' ? getForecast(editId) : getPost(editId);
+  if (!rec) {
+    clearState(who(ctx).id);
+    return reply(ctx, 'Запись не найдена. /edit — начать заново.');
+  }
+  try {
+    const prefix = editType === 'forecast' ? 'forecast' : 'blog';
+    const imageUrl = await uploadTelegramPhoto(ctx.api, photoFileId, prefix);
+    if (editType === 'forecast') updateForecastField(editId, 'image_url', imageUrl);
+    else updatePostField(editId, 'image_url', imageUrl);
+    logger.info(`${editType} id ${editId}: фото обновлено → ${imageUrl} (@${who(ctx).username}).`);
+  } catch (e) {
+    logger.error(`Ошибка загрузки фото: ${e.message}`);
+    return reply(ctx, `Не удалось обновить фото: ${e.message}`);
+  }
+  clearState(who(ctx).id);
+  return reply(ctx, 'Фото обновлено на сайте. /edit — править ещё.');
+}
+
 // --- Приём текста и фото в зависимости от шага ---
 bot.on('message:text', async (ctx) => {
   if (ctx.message.text.startsWith('/')) return;
   const st = getState(who(ctx).id);
   if (!st) return reply(ctx, 'Нажмите /start и выберите тип контента.', { reply_markup: kbType() });
+  if (st.mode === 'edit') {
+    if (st.step === 'await_value') return applyEditText(ctx, st, ctx.message.text);
+    if (st.step === 'await_photo') return reply(ctx, 'Жду фото, не текст. Пришлите изображение или «Отмена».');
+    return reply(ctx, 'Выберите поле кнопкой или нажмите «Отмена».');
+  }
   return onText(ctx, st, ctx.message.text, null);
 });
 
@@ -175,6 +396,10 @@ bot.on(':photo', async (ctx) => {
   const ph = largestPhoto(ctx.message.photo);
   const caption = ctx.message.caption || '';
   if (!st) return reply(ctx, 'Нажмите /start и выберите тип контента.', { reply_markup: kbType() });
+  if (st.mode === 'edit') {
+    if (st.step === 'await_photo') return applyEditPhoto(ctx, st, ph?.file_id || null);
+    return reply(ctx, 'Сейчас фото не жду. Выберите поле кнопкой или «Отмена».');
+  }
   if (st.step === 'await_photo') {
     st.photoFileId = ph?.file_id || null;
     return toPreview(ctx, st);
