@@ -7,7 +7,19 @@
 
 {$SITE_DOMAIN::80} {
 	encode zstd gzip
-	reverse_proxy app:3000
+
+	# Живой эфир: единый поток с Icecast (одна точка на всех слушателей).
+	# Без буферизации — отдаём байты потока сразу, как radio.
+	handle /stream {
+		reverse_proxy icecast:8000 {
+			flush_interval -1
+		}
+	}
+
+	# Всё остальное — на app (Fastify).
+	handle {
+		reverse_proxy app:3000
+	}
 
 	log {
 		output stdout

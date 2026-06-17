@@ -21,11 +21,13 @@ import healthRoutes from './routes/health.js';
 import tracksRoutes from './routes/tracks.js';
 import forecastRoutes from './routes/forecast.js';
 import postsRoutes from './routes/posts.js';
+import streamRoutes from './routes/stream.js';
 
 await app.register(healthRoutes, { prefix: '/api' });
 await app.register(tracksRoutes, { prefix: '/api' });
 await app.register(forecastRoutes, { prefix: '/api' });
 await app.register(postsRoutes, { prefix: '/api' });
+await app.register(streamRoutes, { prefix: '/api' });
 
 // Статика (фронт)
 await app.register(fastifyStatic, {

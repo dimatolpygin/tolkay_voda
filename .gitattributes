@@ -1,0 +1,7 @@
+# Shell-скрипты и конфиги контейнеров — всегда LF (CRLF ломает sh в Alpine).
+*.sh text eol=lf
+entrypoint.sh text eol=lf
+*.liq text eol=lf
+*.m3u text eol=lf
+Caddyfile text eol=lf
+Dockerfile text eol=lf

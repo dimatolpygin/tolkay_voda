@@ -1,0 +1,62 @@
+<icecast>
+    <location>Earth</location>
+    <admin>radio@tolkay-voda.ru</admin>
+
+    <limits>
+        <clients>500</clients>
+        <sources>2</sources>
+        <queue-size>524288</queue-size>
+        <client-timeout>30</client-timeout>
+        <header-timeout>15</header-timeout>
+        <source-timeout>10</source-timeout>
+        <!-- Бёрст на подключении: слушатель быстро стартует с текущей (live) точки. -->
+        <burst-on-connect>1</burst-on-connect>
+        <burst-size>65536</burst-size>
+    </limits>
+
+    <authentication>
+        <source-password>${ICECAST_SOURCE_PASSWORD}</source-password>
+        <relay-password>${ICECAST_SOURCE_PASSWORD}</relay-password>
+        <admin-user>admin</admin-user>
+        <admin-password>${ICECAST_ADMIN_PASSWORD}</admin-password>
+    </authentication>
+
+    <hostname>tolkay-voda.ru</hostname>
+
+    <listen-socket>
+        <port>8000</port>
+    </listen-socket>
+
+    <!-- CORS: чтобы WebAudio-анализатор работал и при прямом обращении к Icecast. -->
+    <http-headers>
+        <header name="Access-Control-Allow-Origin" value="*" />
+    </http-headers>
+
+    <mount type="normal">
+        <mount-name>/stream</mount-name>
+        <public>1</public>
+        <stream-name>Радио Толкай Вода</stream-name>
+    </mount>
+
+    <paths>
+        <logdir>/var/log/icecast</logdir>
+        <webroot>/usr/share/icecast/web</webroot>
+        <adminroot>/usr/share/icecast/admin</adminroot>
+        <alias source="/" destination="/status.xsl"/>
+    </paths>
+
+    <logging>
+        <accesslog>-</accesslog>
+        <errorlog>-</errorlog>
+        <loglevel>3</loglevel>
+    </logging>
+
+    <security>
+        <chroot>0</chroot>
+        <!-- Icecast стартует под root в контейнере и сбрасывает привилегии. -->
+        <changeowner>
+            <user>icecast</user>
+            <group>icecast</group>
+        </changeowner>
+    </security>
+</icecast>
