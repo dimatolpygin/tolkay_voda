@@ -35,11 +35,14 @@
 
 ## Активная работа
 
-**Этап 11 — Живой эфир (Icecast + Liquidsoap)** 🚧. Стек: Liquidsoap тянет треки с CDN
-(плейлист из `tracks.json`) → один 128k MP3 → Icecast раздаёт всем; Caddy проксирует `/stream`
-и now-playing; `radio.js` — основной режим `<audio src=/stream>` + фолбэк на джукбокс.
-Новые сервисы в docker-compose (icecast + liquidsoap). Верификация: два устройства слышат одно
-и то же, новый слушатель входит «с середины»; локально `docker compose` поднимает поток.
+**Этап 11 — Живой эфир (Icecast + Liquidsoap)** 🚧 — **развёрнуто в проде, инфра проверена, ждёт браузерной UAT клиентом**.
+Проверено на сервере (f2b7e3c+): liquidsoap подключился к icecast (128k, audio/mpeg), тянет треки с CDN;
+`https://tolkay-voda.ru/stream` отдаёт `audio/mpeg` (бёрст на подключении — быстрый старт с live-точки);
+`/api/stream/now` → online:true; сайт жив (200). Пароли Icecast добавлены в прод `.env`.
+Найдено и исправлено по ходу: Icecast не работает под root → changeowner на `icecast`; бинд-маунт
+одного Caddyfile держал старый inode после `git reset` → деплой теперь force-recreate caddy.
+Транзиентный `523` с CDN при старте Liquidsoap (восстановился сам — следить, если будут паузы).
+Ждём от клиента: два устройства слышат одно и то же, вход «с середины», фолбэк на джукбокс при выкл. эфире.
 **Ветка**: `dev` (прод-ветка `master`, деплой `/opt/tolkay_voda`)
 Прод: https://tolkay-voda.ru (сервер 159.194.201.64, docker-compose: app+caddy+bot, SQLite). Бот @tolkayvodabot.
 
