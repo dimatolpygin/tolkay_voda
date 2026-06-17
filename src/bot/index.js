@@ -505,8 +505,24 @@ bot.catch((err) => {
   logger.error(`Необработанная ошибка бота: ${err.error?.message || err.message}`);
 });
 
+// Меню команд слева от поля ввода (кнопка Menu / список по «/»).
+const COMMANDS = [
+  { command: 'start', description: 'Меню: добавить контент' },
+  { command: 'edit', description: 'Редактировать или удалить' },
+  { command: 'help', description: 'Справка' },
+  { command: 'cancel', description: 'Отмена' },
+];
+
 bot.start({
-  onStart: (info) => logger.info(`Бот @${info.username} запущен (long-polling).`),
+  onStart: async (info) => {
+    try {
+      await bot.api.setMyCommands(COMMANDS);
+      logger.info('Меню команд бота установлено.');
+    } catch (e) {
+      logger.warn(`Не удалось установить меню команд: ${e.message}`);
+    }
+    logger.info(`Бот @${info.username} запущен (long-polling).`);
+  },
 });
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
