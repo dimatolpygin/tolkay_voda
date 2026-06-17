@@ -54,6 +54,10 @@ services:
     depends_on:
       - app
     command: ["node", "src/bot/index.js"]
+    # Бот — long-polling процесс без HTTP-порта, healthcheck из Dockerfile
+    # (fetch на :3000) к нему неприменим. Отключаем, чтобы не висел unhealthy.
+    healthcheck:
+      disable: true
 
 volumes:
   app-data:
