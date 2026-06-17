@@ -60,6 +60,8 @@
       pvImage.src = p.image_url;
       pvImage.alt = p.title || '';
       pvImage.hidden = false;
+      // Недоступное фото (демо-данные) не должно показывать broken-image.
+      pvImage.onerror = () => { pvImage.hidden = true; };
     }
     renderBody(pvBody, p.body || '');
     document.title = `${p.title || 'Статья'} — Радио «Толкай Вода»`;

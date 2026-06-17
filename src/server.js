@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
+import fastifyCompress from '@fastify/compress';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { config } from './lib/config.js';
@@ -10,6 +11,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
 
 const app = Fastify({ loggerInstance: logger, trustProxy: true });
+
+// Сжатие ответов (br/gzip) — HTML/CSS/JS/JSON. Бинарные ассеты (webp/woff2/mp3)
+// уже сжаты, их пропускаем по mime-типу автоматически.
+await app.register(fastifyCompress, { global: true, encodings: ['br', 'gzip'], threshold: 1024 });
 
 // API-маршруты
 import healthRoutes from './routes/health.js';

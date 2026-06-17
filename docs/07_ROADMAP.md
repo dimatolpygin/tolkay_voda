@@ -179,9 +179,9 @@ reverse-proxy **Caddy** (авто-HTTPS), **docker-compose**, деплой **Git
 - Проверка перф (Lighthouse mobile)
 
 **Критерии приёмки** (закрытие → tag `stage-7-done`):
-- [ ] На мобильном фон 9:16, всё читаемо и кликабельно
-- [ ] Нет горизонтального скролла на 360px
-- [ ] Lighthouse Performance (mobile) ≥ 85
+- [x] На мобильном фон 9:16, всё читаемо и кликабельно
+- [x] Нет горизонтального скролла на 360px (и на 320px)
+- [x] Lighthouse Performance (mobile) ≥ 85 → 91–95 (два прогона)
 
 ---
 

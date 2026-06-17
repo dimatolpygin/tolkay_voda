@@ -78,6 +78,8 @@
       elImage.src = f.image_url;
       elImage.alt = f.title || 'Прогноз дня';
       if (elMedia) elMedia.hidden = false;
+      // Недоступное фото (демо-данные) не должно ломать вёрстку.
+      elImage.onerror = () => { if (elMedia) elMedia.hidden = true; };
     } else if (elMedia) {
       elMedia.hidden = true;
     }

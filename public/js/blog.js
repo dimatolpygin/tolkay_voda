@@ -26,8 +26,14 @@
     const img = document.createElement('img');
     img.className = 'post__img';
     img.loading = 'lazy';
+    img.decoding = 'async';
     img.alt = p.title || '';
     img.src = p.image_url || '/assets/img/cover-default.webp';
+    // Если фото с CDN недоступно (демо-данные / удалённое фото) — плейсхолдер.
+    img.addEventListener('error', () => {
+      if (img.src.endsWith('/assets/img/cover-default.webp')) return;
+      img.src = '/assets/img/cover-default.webp';
+    });
 
     const body = document.createElement('div');
     body.className = 'post__body';

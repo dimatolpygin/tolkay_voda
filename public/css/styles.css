@@ -232,7 +232,7 @@ img { max-width: 100%; display: block; }
 .forecast__meta { display: grid; gap: 6px; margin: 0 0 4px; }
 .forecast__row { margin: 0; color: var(--ink); }
 .forecast__key { color: var(--gold-2); font-weight: 700; }
-.forecast__media img { width: 100%; border-radius: 14px; box-shadow: var(--shadow-sm); }
+.forecast__media img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; box-shadow: var(--shadow-sm); background: var(--line); }
 
 .btn-outline {
   margin-top: 18px;
@@ -383,4 +383,15 @@ img { max-width: 100%; display: block; }
 }
 @media (min-width: 761px) and (max-width: 920px) {
   .blog__rail { grid-auto-columns: calc((100% - 18px) / 2); } /* ~2 карточки */
+}
+
+/* Уважаем системную настройку «меньше движения». */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
