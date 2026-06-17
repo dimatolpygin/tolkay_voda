@@ -35,10 +35,11 @@
 
 ## Активная работа
 
-**Этап 12 — SEO под капотом** 🚧. Техническое SEO без видимых изменений на странице:
-`public/robots.txt`, динамический `GET /sitemap.xml` из БД, Open Graph/Twitter на index+privacy,
-серверный маршрут ЧПУ `/blog/:slug` с подстановкой мета статьи (title/description/og:image/canonical),
-JSON-LD (Organization/RadioStation + Article), canonical на всех публичных страницах.
+**Этап 12 — SEO под капотом** 🚧 — **развёрнуто в проде, инфра проверена, ждёт проверки клиентом** (тег не ставим).
+Проверено на проде (5fb5c80): `/robots.txt`, `/sitemap.xml` (главная+privacy+статьи), ЧПУ `/blog/:slug`
+с серверными мета (title/description/OG/Twitter/canonical) + JSON-LD Article; index + OG/JSON-LD RadioStation;
+privacy + OG. Эфир и сайт не затронуты. Ждём от клиента: при шаринге ссылки в мессенджере появляется карточка
+(заголовок/описание/картинка).
 **Ветка**: `dev` (прод-ветка `master`, деплой `/opt/tolkay_voda`).
 Прод: https://tolkay-voda.ru — сайт + живой эфир `/stream` (Icecast+Liquidsoap) + бот @tolkayvodabot.
 **Ветка**: `dev` (прод-ветка `master`, деплой `/opt/tolkay_voda`)
