@@ -4,9 +4,9 @@
 > прочтения **обязательно** сверить с реальностью: `git tag -l "stage-*"`,
 > `git log --oneline -20` — таблица ниже может быть устаревшей.
 
-**Последнее обновление**: 2026-06-18 (этап 11 закрыт — живой эфир Icecast + Liquidsoap)
-**Текущий этап**: **этап 12 — SEO под капотом** 🚧. Майлстоун 2: 10 ✅, 11 ✅, 12 в работе (последний).
-**Следующий шаг**: robots.txt + динамический sitemap.xml + OG/Twitter + серверные мета статей (/blog/:slug) + JSON-LD + canonical.
+**Последнее обновление**: 2026-06-18 (этап 12 закрыт — SEO; **майлстоун 2 завершён**)
+**Текущий этап**: майлстоун 2 (этапы 10–12) закрыт и принят клиентом. Все 13 этапов (0–12) в проде. Активных задач нет.
+**Следующий шаг**: —
 
 ---
 
@@ -29,19 +29,16 @@
 | | **Майлстоун 2 — пост-MVP правки** | | | | |
 | 10 | Редактирование контента (бот) | ✅ | `stage-10-done` | 8b9ce54 | 2026-06-17 |
 | 11 | Живой эфир (Icecast+Liquidsoap) | ✅ | `stage-11-done` | e816e34 | 2026-06-18 |
-| 12 | SEO под капотом | 🚧 | `stage-12-done` | — | — |
+| 12 | SEO под капотом | ✅ | `stage-12-done` | 5fb5c80 | 2026-06-18 |
 
 Детальные критерии приёмки каждого этапа — в [`07_ROADMAP.md`](07_ROADMAP.md).
 
 ## Активная работа
 
-**Этап 12 — SEO под капотом** 🚧 — **развёрнуто в проде, инфра проверена, ждёт проверки клиентом** (тег не ставим).
-Проверено на проде (5fb5c80): `/robots.txt`, `/sitemap.xml` (главная+privacy+статьи), ЧПУ `/blog/:slug`
-с серверными мета (title/description/OG/Twitter/canonical) + JSON-LD Article; index + OG/JSON-LD RadioStation;
-privacy + OG. Эфир и сайт не затронуты. Ждём от клиента: при шаринге ссылки в мессенджере появляется карточка
-(заголовок/описание/картинка).
+Майлстоун 2 (10–12) завершён и принят. Активной работы нет.
 **Ветка**: `dev` (прод-ветка `master`, деплой `/opt/tolkay_voda`).
-Прод: https://tolkay-voda.ru — сайт + живой эфир `/stream` (Icecast+Liquidsoap) + бот @tolkayvodabot.
+Прод: https://tolkay-voda.ru — сайт + живой эфир `/stream` (Icecast+Liquidsoap, источник с CDN) +
+редактирование контента через бота (`/edit`) + SEO (robots/sitemap/OG/ЧПУ `/blog/:slug`). Бот @tolkayvodabot.
 **Ветка**: `dev` (прод-ветка `master`, деплой `/opt/tolkay_voda`)
 Прод: https://tolkay-voda.ru (сервер 159.194.201.64, docker-compose: app+caddy+bot, SQLite). Бот @tolkayvodabot.
 
@@ -50,6 +47,8 @@ privacy + OG. Эфир и сайт не затронуты. Ждём от кли
 Нет.
 
 ## История закрытий
+
+- 2026-06-18 — Этап 12: SEO под капотом — tag stage-12-done — **майлстоун 2 завершён**. `public/robots.txt` (allow, disallow /api, ссылка на sitemap). `src/routes/seo.js`: динамический `GET /sitemap.xml` из БД (главная + privacy + все опубликованные статьи как ЧПУ) и серверный маршрут `GET /blog/:slug` — отдаёт `post.html` с подставленными мета статьи (title/description/og/twitter/canonical) + JSON-LD Article (регистрация без префикса, до статики). index.html: canonical + OG/Twitter + JSON-LD RadioStation; privacy.html: canonical + OG. `blog.js` линкует на `/blog/:slug`, `post.js` берёт slug из ЧПУ или `?slug=` (старые ссылки живут), бот даёт ссылку `https://tolkay-voda.ru/blog/<slug>`. Проверено локально (temp БД) и на проде (5fb5c80): robots/sitemap/ЧПУ отдаются, эфир и сайт не затронуты. Превью-карточка при шаринге в Telegram (заголовок+описание) — подтверждено клиентом скрином.
 
 - 2026-06-18 — Этап 11: Живой эфир (Icecast + Liquidsoap) — tag stage-11-done — единый синхронный поток на всех слушателей вместо джукбокса. Liquidsoap (`docker/liquidsoap/radio.liq`, образ savonet/liquidsoap:v2.2.5) тянет треки **с CDN** (плейлист `playlist.m3u` из `tracks.json` через `scripts/gen-stream-playlist.js`, annotate-метаданные), randomize+crossfade+mksafe → один MP3 128k → Icecast (`docker/icecast/`, Alpine, пароли из env через envsubst, changeowner на icecast, CORS, burst-on-connect для быстрого старта с live-точки). Caddy: `handle /stream` → icecast (flush_interval -1). `src/routes/stream.js`: `/api/stream/now` (now-playing из status-json, чистка битых ICY-кириллических метаданных → бренд). `radio.js`: основной режим `<audio src=/stream>` + поллинг now-playing + автофолбэк на джукбокс при недоступном эфире. Проверено на сервере end-to-end: `/stream` отдаёт audio/mpeg, источник подключён, listeners считаются; CPU liquidsoap ~6.7% / 138 МБ, icecast ~2 МБ, запас RAM ~1.2 ГБ. CDN-стоимость ~80 ГБ/мес (~48 ₽), не зависит от числа слушателей. По ходу исправлено: Icecast под root → changeowner; бинд-маунт одного Caddyfile держал старый inode после `git reset` → деплой теперь `--force-recreate caddy` (deploy.yml). Браузерная проверка клиентом — ок («вроде работает»). Прод-коммит e816e34.
 
