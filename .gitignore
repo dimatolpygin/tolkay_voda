@@ -12,3 +12,4 @@ scripts/_shots/
 .playwright-cli/
 caddy_data/
 caddy_config/
+.secrets/

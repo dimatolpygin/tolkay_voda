@@ -4,9 +4,9 @@
 > прочтения **обязательно** сверить с реальностью: `git tag -l "stage-*"`,
 > `git log --oneline -20` — таблица ниже может быть устаревшей.
 
-**Последнее обновление**: 2026-06-17 (этап 8 закрыт — Docker/Caddy/CI/CD)
-**Текущий этап**: между этапами — этап 9 (прод-деплой, okdeploy) не начат
-**Следующий шаг**: по команде клиента начать Этап 9 — деплой на отдельный сервер, DNS apex → IP, авто-HTTPS, первый прогон GitHub Actions (acceptance в ROADMAP)
+**Последнее обновление**: 2026-06-17 (этап 9 закрыт — прод-деплой; проект в проде)
+**Текущий этап**: все 10 этапов (0–9) закрыты. Сайт работает на https://tolkay-voda.ru
+**Следующий шаг**: добавить GitHub Secrets (SSH_HOST/SSH_USER/SSH_KEY) и проверить автодеплой пушем в master; опц. www-редирект
 
 ---
 
@@ -25,20 +25,22 @@
 | 6 | Контакты/футер + шапка | ✅ | `stage-6-done` | — | 2026-06-17 |
 | 7 | Адаптив/оптимизация | ✅ | `stage-7-done` | — | 2026-06-17 |
 | 8 | Docker/Caddy/CI/CD | ✅ | `stage-8-done` | — | 2026-06-17 |
-| 9 | Прод-деплой | ☐ | `stage-9-done` | — | — |
+| 9 | Прод-деплой | ✅ | `stage-9-done` | — | 2026-06-17 |
 
 Детальные критерии приёмки каждого этапа — в [`07_ROADMAP.md`](07_ROADMAP.md).
 
 ## Активная работа
 
-**Этап**: нет активного (этап 8 закрыт, этап 9 ждёт команды клиента).
-**Ветка**: `dev`
+**Этап**: проект в проде. Прод: https://tolkay-voda.ru (сервер 159.194.201.64, docker-compose: app+caddy+bot, SQLite, COMPOSE_PROFILES=bot). Бот @tolkayvodabot.
+**Ветка**: `dev` (прод-ветка `master`, деплой `/opt/tolkay_voda`)
 
 ## Известные блокеры
 
 Нет.
 
 ## История закрытий
+
+- 2026-06-17 — Этап 9: Прод-деплой (okdeploy) — tag stage-9-done — развёрнут на сервере Music_site `159.194.201.64` (Ubuntu 24.04, 2 ядра / 2 ГБ, +swap 2G). Установлен Docker 29.5.3, склонирован `master` в `/opt/tolkay_voda`, залит `.env` (production, SITE_DOMAIN=tolkay-voda.ru, COMPOSE_PROFILES=bot, секреты S3/BOT/OPENAI). `docker compose up -d --build` поднял app(healthy)+caddy+bot. Caddy выпустил Let's Encrypt-сертификат для apex (DNS apex → IP добавлен клиентом в Beget; зона домена на Beget NS, не reg.ru; n8n на отдельном сервере 31.207.75.17). Проверено: https://tolkay-voda.ru — 200, радио играет с CDN (трек «Це Апрель»), HTTP→HTTPS 308, /api/health ok; бот @tolkayvodabot запущен (long-polling), принял /start от админа; n8n.tolkay-voda.ru — 200 (не затронут). Deploy-ключ ed25519 установлен на сервер (вход CI). Осталось: добавить в GitHub Secrets SSH_HOST/SSH_USER/SSH_KEY и проверить автодеплой пушем в master.
 
 - 2026-06-17 — Этап 8: Docker/Caddy/CI/CD — tag stage-8-done — `Dockerfile` (node:24-slim, `npm ci --omit=dev`, healthcheck через встроенный fetch), `docker-compose.yml` (app + caddy; бот в профиле `bot`, чтобы `up` не падал без BOT_TOKEN; общий volume `app-data` под SQLite, тома `caddy_data`/`caddy_config`), `Caddyfile` (reverse_proxy на app:3000, `SITE_DOMAIN` env: `:80` локально / домен → авто-HTTPS), `.dockerignore`, `.github/workflows/deploy.yml` (push в master → SSH-деплой через appleboy/ssh-action: `git reset --hard origin/master` + `docker compose up -d --build`). Проверено локально: `docker compose up -d --build` поднял app (healthy) + caddy, Caddy отдаёт сайт по HTTP (200 `via: Caddy`), все ассеты/страницы 200, бот-профиль валиден. Архитектура прода: сайт на отдельном сервере, Caddy единолично владеет 80/443, n8n (n8n.tolkay-voda.ru) на своей машине не затрагивается. Живой прогон workflow — на этапе 9 (после okdeploy: сервер, клон репо, secrets SSH_HOST/USER/KEY).
 
