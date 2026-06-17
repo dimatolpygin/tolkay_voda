@@ -7,13 +7,21 @@ const STATUS_URL = `http://${ICECAST_HOST}:${ICECAST_PORT}/status-json.xsl`;
 let cache = { at: 0, data: null };
 const TTL_MS = 4000;
 
+// ICY-метаданные Icecast — latin1, кириллица приходит битой ('*'/моджибейк).
+// Если в строке нет ни одной буквы — считаем её мусором и отдаём пусто
+// (фронт покажет бренд «Радио Толкай Вода»).
+function cleanMeta(s) {
+  const t = String(s || '').trim();
+  return /\p{L}/u.test(t) ? t : '';
+}
+
 // ICY-метаданные приходят как "Artist - Title" или просто title.
 function splitTitle(raw, fallbackArtist) {
   const s = String(raw || '').trim();
-  if (!s) return { title: '', artist: fallbackArtist || '' };
+  if (!s) return { title: '', artist: cleanMeta(fallbackArtist) };
   const i = s.indexOf(' - ');
-  if (i > 0) return { artist: s.slice(0, i).trim(), title: s.slice(i + 3).trim() };
-  return { title: s, artist: fallbackArtist || '' };
+  if (i > 0) return { artist: cleanMeta(s.slice(0, i)), title: cleanMeta(s.slice(i + 3)) };
+  return { title: cleanMeta(s), artist: cleanMeta(fallbackArtist) };
 }
 
 export default async function streamRoutes(app) {
