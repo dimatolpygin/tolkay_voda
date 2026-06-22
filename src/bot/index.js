@@ -408,11 +408,23 @@ bot.callbackQuery(/^track:pick:(\d+)$/, async (ctx) => {
   const id = Number(ctx.match[1]);
   const t = getTrack(id);
   if (!t) return reply(ctx, 'Песня не найдена (возможно, уже удалена). /edit — начать заново.');
-  await reply(ctx, `Удалить песню из эфира?\n\n«${t.title}»`, {
-    reply_markup: new InlineKeyboard()
-      .text('Да, удалить', `track:delyes:${id}`)
-      .text('Отмена', 'cancel'),
-  });
+  const kb = new InlineKeyboard()
+    .text('Да, удалить', `track:delyes:${id}`)
+    .text('Отмена', 'cancel');
+  // Присылаем сам mp3 с CDN, чтобы можно было прослушать перед удалением.
+  // Если Telegram не смог скачать файл — откатываемся на текстовое подтверждение.
+  try {
+    await ctx.replyWithAudio(t.url, {
+      caption: `Удалить песню из эфира?\n\n«${t.title}»`,
+      title: t.title,
+      performer: t.artist || 'Клан Толкай Вода',
+      reply_markup: kb,
+    });
+    logger.info(`Бот -> @${who(ctx).username}: аудио «${t.title}» + подтверждение удаления.`);
+  } catch (e) {
+    logger.warn(`Не удалось прислать аудио ${t.url}: ${e.message} — текстовое подтверждение.`);
+    await reply(ctx, `Удалить песню из эфира?\n\n«${t.title}»`, { reply_markup: kb });
+  }
 });
 
 bot.callbackQuery(/^track:delyes:(\d+)$/, async (ctx) => {
