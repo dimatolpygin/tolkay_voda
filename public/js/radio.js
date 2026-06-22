@@ -134,9 +134,57 @@
     go();
   }
 
+  // ---------- Подтверждение возраста (18+) ----------
+  // Гейт перед ПЕРВЫМ запуском. Выбор «Мне есть 18 лет» запоминается в localStorage,
+  // больше окно не всплывает. Без подтверждения воспроизведение не стартует, но
+  // остальной сайт (блог, прогноз) остаётся доступен.
+  const AGE_KEY = 'tv_age_confirmed';
+  const ageModal = document.getElementById('ageModal');
+
+  function ageConfirmed() {
+    try { return localStorage.getItem(AGE_KEY) === '1'; } catch { return false; }
+  }
+
+  function ensureAdult() {
+    if (ageConfirmed() || !ageModal) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const yes = document.getElementById('ageYes');
+      const no = document.getElementById('ageNo');
+      const deny = document.getElementById('ageDeny');
+      const actions = document.getElementById('ageActions');
+      const backdrop = ageModal.querySelector('[data-age-close]');
+
+      const close = (val) => {
+        ageModal.classList.remove('is-open');
+        document.body.style.overflow = '';
+        if (deny) deny.hidden = true;
+        if (actions) actions.hidden = false;
+        yes.removeEventListener('click', onYes);
+        no.removeEventListener('click', onNo);
+        if (backdrop) backdrop.removeEventListener('click', onCancel);
+        document.removeEventListener('keydown', onKey);
+        resolve(val);
+      };
+      const onYes = () => { try { localStorage.setItem(AGE_KEY, '1'); } catch {} close(true); };
+      const onNo = () => { if (actions) actions.hidden = true; if (deny) deny.hidden = false; };
+      const onCancel = () => close(false);
+      const onKey = (e) => { if (e.key === 'Escape') close(false); };
+
+      yes.addEventListener('click', onYes);
+      no.addEventListener('click', onNo);
+      if (backdrop) backdrop.addEventListener('click', onCancel);
+      document.addEventListener('keydown', onKey);
+
+      ageModal.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    });
+  }
+
   // ---------- Кнопка ----------
   playBtn.addEventListener('click', async () => {
     if (!started) {
+      const ok = await ensureAdult();
+      if (!ok) return;
       started = true;
       await startPlayback();
       return;
