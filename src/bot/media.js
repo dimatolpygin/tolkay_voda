@@ -26,3 +26,20 @@ export async function uploadTelegramPhoto(api, fileId, prefix) {
 
   return uploadObject(key, buf, contentType);
 }
+
+// Скачивает аудио Telegram по file_id и заливает в бакет под ключом
+// `audio/<keyBase>.mp3` (keyBase — ASCII-слаг с номером позиции).
+// Возвращает { url, key }. Лимит скачивания через Bot API — 20 МБ.
+export async function uploadTelegramAudio(api, fileId, keyBase) {
+  const file = await api.getFile(fileId);
+  if (!file.file_path) throw new Error('Telegram не вернул file_path');
+
+  const url = `https://api.telegram.org/file/bot${config.bot.token}/${file.file_path}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Скачивание из Telegram: HTTP ${res.status}`);
+
+  const buf = Buffer.from(await res.arrayBuffer());
+  const key = `audio/${keyBase}.mp3`;
+  const cdn = await uploadObject(key, buf, 'audio/mpeg');
+  return { url: cdn, key };
+}

@@ -6,6 +6,16 @@ import { dirname, join } from 'node:path';
 import { config } from './lib/config.js';
 import { logger } from './lib/logger.js';
 import './lib/db.js'; // инициализация БД при старте
+import { regeneratePlaylist } from './lib/playlist.js';
+
+// Плейлист эфира строим из БД при старте — заполняем общий том /playlist,
+// который читает Liquidsoap (reload_mode="watch"). Не валим старт, если не вышло.
+try {
+  const n = regeneratePlaylist();
+  logger.info(`Плейлист эфира собран из БД: ${n} треков → ${config.playlistPath}`);
+} catch (err) {
+  logger.error({ err }, 'Не удалось собрать плейлист эфира при старте');
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');

@@ -18,8 +18,10 @@ services:
       PORT: 3000
       DB_PATH: /app/data/app.db
       ICECAST_HOST: icecast
+      PLAYLIST_PATH: /playlist/playlist.m3u
     volumes:
       - app-data:/app/data
+      - playlist:/playlist
     expose:
       - "3000"
 
@@ -57,13 +59,19 @@ services:
     image: savonet/liquidsoap:v2.2.5
     container_name: tolkay-liquidsoap
     restart: unless-stopped
+    # app стартует первым и записывает /playlist/playlist.m3u из БД — иначе на
+    # первом деплое том пуст и плейлисту нечего читать.
     depends_on:
-      - icecast
+      icecast:
+        condition: service_started
+      app:
+        condition: service_healthy
     environment:
       ICECAST_HOST: icecast
       ICECAST_SOURCE_PASSWORD: ${ICECAST_SOURCE_PASSWORD:?задайте ICECAST_SOURCE_PASSWORD в .env}
     volumes:
       - ./docker/liquidsoap:/etc/liquidsoap:ro
+      - playlist:/playlist:ro
     command: ["liquidsoap", "/etc/liquidsoap/radio.liq"]
 
   bot:
@@ -76,8 +84,10 @@ services:
     environment:
       NODE_ENV: production
       DB_PATH: /app/data/app.db
+      PLAYLIST_PATH: /playlist/playlist.m3u
     volumes:
       - app-data:/app/data
+      - playlist:/playlist
     depends_on:
       - app
     command: ["node", "src/bot/index.js"]
@@ -90,3 +100,4 @@ volumes:
   app-data:
   caddy_data:
   caddy_config:
+  playlist: # общий том app/bot ↔ liquidsoap: плейлист эфира из БД
