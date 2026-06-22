@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  HeadBucketCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { config } from './config.js';
 
 // Клиент S3 Beget (path-style)
@@ -34,4 +39,11 @@ export async function uploadObject(key, body, contentType) {
 
 export function cdnUrl(key) {
   return `${config.s3.cdnBaseUrl}/${key}`;
+}
+
+// Удаляет объект из бакета (idempotent — S3 не ошибается, если ключа нет).
+export async function deleteObject(key) {
+  if (!key) return false;
+  await s3.send(new DeleteObjectCommand({ Bucket: config.s3.bucket, Key: key }));
+  return true;
 }

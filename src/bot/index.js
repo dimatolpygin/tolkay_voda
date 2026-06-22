@@ -18,8 +18,16 @@ import {
 } from './store.js';
 import { largestPhoto, uploadTelegramPhoto, uploadTelegramAudio } from './media.js';
 import { prepareForecast, prepareForecastFallback, aiEnabled } from '../lib/ai.js';
-import { insertTrack, nextPosition } from '../lib/tracks-store.js';
+import {
+  insertTrack,
+  nextPosition,
+  listTracks,
+  getTrack,
+  deleteTrack,
+  countTracks,
+} from '../lib/tracks-store.js';
 import { regeneratePlaylist } from '../lib/playlist.js';
+import { deleteObject } from '../lib/s3.js';
 import { slugify } from '../lib/slug.js';
 
 const stripExt = (n) => String(n || '').replace(/\.[^.]+$/, '').trim();
@@ -79,7 +87,29 @@ const kbPublish = () =>
 const kbEditMenu = () =>
   new InlineKeyboard()
     .text('Прогнозы', 'edit:list:forecast')
-    .text('Статьи', 'edit:list:post');
+    .text('Статьи', 'edit:list:post')
+    .row()
+    .text('Песни (удалить)', 'track:list');
+
+// Список песен с пагинацией для удаления.
+const TRACKS_PER_PAGE = 8;
+function kbTrackList(page) {
+  const all = listTracks();
+  const pages = Math.max(1, Math.ceil(all.length / TRACKS_PER_PAGE));
+  const p = Math.min(Math.max(0, page), pages - 1);
+  const slice = all.slice(p * TRACKS_PER_PAGE, p * TRACKS_PER_PAGE + TRACKS_PER_PAGE);
+  const kb = new InlineKeyboard();
+  for (const t of slice) {
+    kb.text(`${t.position}. ${(t.title || 'без названия').slice(0, 40)}`, `track:pick:${t.id}`).row();
+  }
+  const nav = [];
+  if (p > 0) nav.push(['← Назад', `track:list:${p - 1}`]);
+  if (p < pages - 1) nav.push(['Вперёд →', `track:list:${p + 1}`]);
+  for (const [label, data] of nav) kb.text(label, data);
+  if (nav.length) kb.row();
+  kb.text('Отмена', 'cancel');
+  return { kb, page: p, pages, total: all.length };
+}
 
 // Список записей: по кнопке на запись + «Отмена».
 function kbEditList(type, rows) {
@@ -152,7 +182,7 @@ const HELP = [
   'Дальше я проведу по шагам: контент → предпросмотр → публикация.',
   '',
   'Песня: пришлите mp3 (до 20 МБ) и название — трек сразу попадёт в эфир и список на сайте.',
-  '/edit — отредактировать или удалить уже опубликованный прогноз или статью.',
+  '/edit — отредактировать или удалить прогноз/статью, а также удалить песню из эфира.',
 ].join('\n');
 
 // --- Логирование входящих ---
@@ -360,6 +390,57 @@ bot.callbackQuery(/^edit:delyes:(forecast|post):(\d+)$/, async (ctx) => {
   if (!changes) return reply(ctx, 'Запись уже отсутствует.');
   logger.info(`Удалено: ${type} id ${id} (@${who(ctx).username}).`);
   await reply(ctx, type === 'forecast' ? 'Прогноз удалён с сайта.' : 'Статья удалена с сайта.');
+});
+
+// --- Удаление песен (этап 14) ---
+bot.callbackQuery(/^track:list(?::(\d+))?$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  clearState(who(ctx).id);
+  const { kb, page, pages, total } = kbTrackList(Number(ctx.match[1] || 0));
+  if (!total) return reply(ctx, 'Песен в эфире пока нет.');
+  await reply(ctx, `Песни в эфире (${total}). Выберите, что удалить. Стр. ${page + 1}/${pages}:`, {
+    reply_markup: kb,
+  });
+});
+
+bot.callbackQuery(/^track:pick:(\d+)$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const id = Number(ctx.match[1]);
+  const t = getTrack(id);
+  if (!t) return reply(ctx, 'Песня не найдена (возможно, уже удалена). /edit — начать заново.');
+  await reply(ctx, `Удалить песню из эфира?\n\n«${t.title}»`, {
+    reply_markup: new InlineKeyboard()
+      .text('Да, удалить', `track:delyes:${id}`)
+      .text('Отмена', 'cancel'),
+  });
+});
+
+bot.callbackQuery(/^track:delyes:(\d+)$/, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const id = Number(ctx.match[1]);
+  const t = getTrack(id);
+  if (!t) return reply(ctx, 'Песня уже удалена.');
+  if (countTracks() <= 1) {
+    return reply(ctx, 'Нельзя удалить последнюю песню — эфир останется без музыки. Сначала добавьте другую.');
+  }
+  try {
+    deleteTrack(id);
+    try {
+      await deleteObject(t.s3_key);
+    } catch (e) {
+      logger.warn(`Не удалось удалить объект S3 ${t.s3_key}: ${e.message}`);
+    }
+    const n = regeneratePlaylist();
+    logger.info(`Песня удалена (id ${id}): «${t.title}»; плейлист пересобран (${n} треков) (@${who(ctx).username}).`);
+    clearState(who(ctx).id);
+    await reply(
+      ctx,
+      `Песня «${t.title}» удалена из эфира (осталось ${n}). Пропадёт с сайта и из потока в течение минуты.`
+    );
+  } catch (e) {
+    logger.error(`Ошибка удаления песни: ${e.message}`);
+    await reply(ctx, `Не удалось удалить: ${e.message}`);
+  }
 });
 
 // Применение правки текстового поля.
