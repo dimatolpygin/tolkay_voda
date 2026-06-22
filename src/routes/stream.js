@@ -4,26 +4,12 @@
 // ICY-метаданные Icecast не умеют надёжно нести кириллицу (поле title приходит
 // пустым/битым). Поэтому в эфир уходит ASCII-слаг имени файла
 // (напр. "47-carstvo-ne-tam-za-goroi"), а человекочитаемое русское название
-// резолвим здесь по tracks.json: slug → { title, artist }.
-import { readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { isProd } from '../lib/config.js';
+// резолвим здесь по фонотеке в БД: slug → { title, artist }.
+import { listTracks } from '../lib/tracks-store.js';
 
 const ICECAST_HOST = process.env.ICECAST_HOST || 'icecast';
 const ICECAST_PORT = process.env.ICECAST_PORT || '8000';
 const STATUS_URL = `http://${ICECAST_HOST}:${ICECAST_PORT}/status-json.xsl`;
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const assetsDir = join(__dirname, '..', '..', 'public', 'assets');
-const cdnManifest = join(assetsDir, 'tracks.json');
-const localManifest = join(assetsDir, 'tracks.local.json');
-
-// В dev предпочитаем локальный манифест (как и /tracks), в проде — CDN-манифест.
-function manifestFile() {
-  if (!isProd && existsSync(localManifest)) return localManifest;
-  return cdnManifest;
-}
 
 // slug = имя файла из URL без расширения: .../audio/47-carstvo-....mp3 → 47-carstvo-...
 function slugFromUrl(url) {
@@ -31,7 +17,7 @@ function slugFromUrl(url) {
   return base.replace(/\.[^.]+$/, '').toLowerCase();
 }
 
-// Карта slug → { title, artist } из tracks.json (лёгкий кэш на 60с).
+// Карта slug → { title, artist } из БД (лёгкий кэш на 60с).
 let trackMap = null;
 let trackMapAt = 0;
 function loadTrackMap() {
@@ -39,18 +25,13 @@ function loadTrackMap() {
   if (trackMap && now - trackMapAt < 60_000) return trackMap;
   const map = [];
   try {
-    const path = manifestFile();
-    if (existsSync(path)) {
-      const data = JSON.parse(readFileSync(path, 'utf8'));
-      const list = Array.isArray(data) ? data : data.tracks || [];
-      for (const t of list) {
-        if (t && t.url) {
-          map.push({ slug: slugFromUrl(t.url), title: t.title || '', artist: t.artist || '' });
-        }
+    for (const t of listTracks()) {
+      if (t && t.url) {
+        map.push({ slug: slugFromUrl(t.url), title: t.title || '', artist: t.artist || '' });
       }
     }
   } catch {
-    // битый манифест → пустая карта → фолбэк на бренд на фронте
+    // БД недоступна → пустая карта → фолбэк на бренд на фронте
   }
   trackMap = map;
   trackMapAt = now;

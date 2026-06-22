@@ -8,11 +8,13 @@ icecast_password = environment.get("ICECAST_SOURCE_PASSWORD")
 icecast_host = environment.get("ICECAST_HOST")
 icecast_host = if icecast_host == "" then "icecast" else icecast_host end
 
-# Плейлист CDN-URL. randomize — перемешивать; watch — перечитывать файл при изменении.
+# Плейлист CDN-URL из общего тома /playlist (приложение генерирует его из БД).
+# randomize — перемешивать; watch — перечитывать файл при изменении (добавление/
+# удаление песни через бота попадает в эфир без рестарта).
 music = playlist(
   mode="randomize",
   reload_mode="watch",
-  "/etc/liquidsoap/playlist.m3u"
+  "/playlist/playlist.m3u"
 )
 
 # Мягкие переходы между треками — как на радио.

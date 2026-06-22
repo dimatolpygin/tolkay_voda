@@ -1,12 +1,22 @@
 import 'dotenv/config';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
 const num = (v, def) => (v != null && v !== '' ? Number(v) : def);
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const config = {
   port: num(process.env.PORT, 3000),
   host: process.env.HOST || '0.0.0.0',
   env: process.env.NODE_ENV || 'development',
   dbPath: process.env.DB_PATH || './data/app.db',
+
+  // Куда писать плейлист для Liquidsoap. В контейнерах — общий том /playlist
+  // (см. docker-compose, env PLAYLIST_PATH); локально — файл в репозитории.
+  playlistPath:
+    process.env.PLAYLIST_PATH ||
+    join(__dirname, '..', '..', 'docker', 'liquidsoap', 'playlist.m3u'),
 
   s3: {
     region: process.env.S3_REGION || 'ru-central-1',

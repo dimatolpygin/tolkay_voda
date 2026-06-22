@@ -16,8 +16,13 @@ import {
   deleteForecast,
   deletePost,
 } from './store.js';
-import { largestPhoto, uploadTelegramPhoto } from './media.js';
+import { largestPhoto, uploadTelegramPhoto, uploadTelegramAudio } from './media.js';
 import { prepareForecast, prepareForecastFallback, aiEnabled } from '../lib/ai.js';
+import { insertTrack, nextPosition } from '../lib/tracks-store.js';
+import { regeneratePlaylist } from '../lib/playlist.js';
+import { slugify } from '../lib/slug.js';
+
+const stripExt = (n) => String(n || '').replace(/\.[^.]+$/, '').trim();
 
 if (!config.bot.token) {
   logger.error('BOT_TOKEN не задан в .env — бот не запущен.');
@@ -61,6 +66,8 @@ const kbType = () =>
   new InlineKeyboard()
     .text('Прогноз дня', 'type:forecast')
     .text('Статья в блог', 'type:post')
+    .row()
+    .text('Добавить песню', 'type:track')
     .row()
     .text('Редактировать', 'edit:menu');
 const kbPhoto = () =>
@@ -141,9 +148,10 @@ const FIELD_RU = {
 const HELP = [
   'Бот клана «Толкай Вода». Публикую контент на сайте.',
   '',
-  'Нажмите /start и выберите, что добавить: прогноз дня или статью в блог.',
-  'Дальше я проведу по шагам: текст → фото → предпросмотр → публикация.',
+  'Нажмите /start и выберите, что добавить: прогноз дня, статью в блог или песню в эфир.',
+  'Дальше я проведу по шагам: контент → предпросмотр → публикация.',
   '',
+  'Песня: пришлите mp3 (до 20 МБ) и название — трек сразу попадёт в эфир и список на сайте.',
   '/edit — отредактировать или удалить уже опубликованный прогноз или статью.',
 ].join('\n');
 
@@ -199,6 +207,14 @@ bot.callbackQuery('type:post', async (ctx) => {
   setState(who(ctx).id, { type: 'post', step: 'await_title' });
   await reply(ctx, 'Статья в блог. Шаг 1 из 3: пришлите заголовок статьи одной строкой.');
 });
+bot.callbackQuery('type:track', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  setState(who(ctx).id, { type: 'track', step: 'await_audio' });
+  await reply(
+    ctx,
+    'Добавить песню в эфир. Шаг 1 из 2: пришлите аудиофайл mp3 (до 20 МБ).'
+  );
+});
 
 // --- Пропустить фото ---
 bot.callbackQuery('photo:skip', async (ctx) => {
@@ -224,6 +240,33 @@ bot.callbackQuery('publish', async (ctx) => {
     return reply(ctx, 'Нечего публиковать. Нажмите /start.');
   }
   try {
+    // --- Песня: загрузка mp3 в S3 → запись в БД → перегенерация плейлиста ---
+    if (st.type === 'track') {
+      const pos = nextPosition();
+      const slug = slugify(st.trackTitle);
+      const keyBase = `${String(pos).padStart(2, '0')}-${slug}`;
+      const { url, key } = await uploadTelegramAudio(ctx.api, st.audioFileId, keyBase);
+      const r = insertTrack({
+        title: st.trackTitle,
+        artist: 'Клан Толкай Вода',
+        s3Key: key,
+        url,
+        position: pos,
+      });
+      const n = regeneratePlaylist();
+      logger.info(
+        `Песня добавлена (id ${r.id}, поз ${pos}): «${st.trackTitle}» → ${url}; ` +
+          `плейлист пересобран (${n} треков) (@${who(ctx).username}).`
+      );
+      clearState(who(ctx).id);
+      await reply(
+        ctx,
+        `Песня «${st.trackTitle}» добавлена в эфир (всего ${n} треков). ` +
+          'Появится на сайте и в потоке в течение минуты.'
+      );
+      return;
+    }
+
     let imageUrl = null;
     if (st.photoFileId) {
       const prefix = st.type === 'forecast' ? 'forecast' : 'blog';
@@ -408,9 +451,50 @@ bot.on(':photo', async (ctx) => {
   return onText(ctx, st, caption, ph?.file_id || null);
 });
 
+// Аудио для сценария «Добавить песню» (как музыка или как файл-документ).
+bot.on(['message:audio', 'message:document'], async (ctx) => {
+  const st = getState(who(ctx).id);
+  if (!st || st.type !== 'track') {
+    if (!st) return reply(ctx, 'Нажмите /start и выберите «Добавить песню».', { reply_markup: kbType() });
+    return; // в других сценариях файлы не ждём
+  }
+  if (st.step !== 'await_audio') return reply(ctx, 'Сейчас аудио не жду. /start — начать заново.');
+
+  const audio = ctx.message.audio;
+  const doc = ctx.message.document;
+  if (doc && !audio && !String(doc.mime_type || '').startsWith('audio')) {
+    return reply(ctx, 'Это не аудио. Пришлите mp3-файл.');
+  }
+  const f = audio || doc;
+  st.audioFileId = f.file_id;
+  st.suggestedTitle = (audio && audio.title) || stripExt(f.file_name) || '';
+  st.step = 'await_track_title';
+
+  const hint = st.suggestedTitle
+    ? `\nИли пришлите «ок» — возьму название из файла: «${st.suggestedTitle}».`
+    : '';
+  return reply(
+    ctx,
+    `Аудио принято. Шаг 2 из 2: пришлите название песни (на русском — как показывать на сайте).${hint}`,
+    { reply_markup: new InlineKeyboard().text('Отмена', 'cancel') }
+  );
+});
+
 // Маршрутизация текста по шагам сценария.
 async function onText(ctx, st, text, photoFileId) {
   const trimmed = (text || '').trim();
+
+  // --- Песня: название после загрузки аудио ---
+  if (st.type === 'track') {
+    if (st.step !== 'await_track_title') {
+      return reply(ctx, 'Сейчас жду действие кнопкой. /start — начать заново.');
+    }
+    let title = trimmed;
+    if (/^ок$/i.test(trimmed) && st.suggestedTitle) title = st.suggestedTitle;
+    if (!title) return reply(ctx, 'Пустое название. Пришлите название песни.');
+    st.trackTitle = title;
+    return toPreview(ctx, st);
+  }
 
   // --- Прогноз: один текстовый шаг ---
   if (st.type === 'forecast') {
@@ -455,6 +539,18 @@ async function onText(ctx, st, text, photoFileId) {
 // Готовим предпросмотр (для прогноза — через ИИ) и показываем кнопки публикации.
 async function toPreview(ctx, st) {
   st.step = 'preview';
+
+  // Песня: показываем название и кнопку «Добавить».
+  if (st.type === 'track') {
+    st.prepared = { title: st.trackTitle };
+    return reply(
+      ctx,
+      `Добавить песню в эфир:\n\nНазвание: ${st.trackTitle}\nИсполнитель: Клан Толкай Вода\n\n` +
+        'После добавления песня сразу попадёт в ротацию эфира и в список на сайте.',
+      { reply_markup: new InlineKeyboard().text('Добавить', 'publish').text('Отмена', 'cancel') }
+    );
+  }
+
   if (st.type === 'forecast') {
     let prepared;
     let note = '';

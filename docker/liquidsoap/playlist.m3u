@@ -1,4 +1,4 @@
-# Плейлист эфира Liquidsoap — сгенерирован из tracks.json (scripts/gen-stream-playlist.js).
+# Плейлист эфира Liquidsoap — сгенерирован из БД (src/lib/playlist.js).
 annotate:title="01-radio-tolkay-voda":https://ceshocofureled.begetcdn.cloud/audio/01-radio-tolkay-voda.mp3
 annotate:title="02-radio-tolkay-voda-2":https://ceshocofureled.begetcdn.cloud/audio/02-radio-tolkay-voda-2.mp3
 annotate:title="03-radio-tolkay-voda-3":https://ceshocofureled.begetcdn.cloud/audio/03-radio-tolkay-voda-3.mp3
