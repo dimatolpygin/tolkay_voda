@@ -1,6 +1,6 @@
 // Telegram-бот контента: пошаговый сценарий (FSM) с инлайн-кнопками.
 // Прогноз дня проходит через ИИ-выжимку (OpenAI). Доступ — только whitelist.
-import { Bot, InlineKeyboard } from 'grammy';
+import { Bot, InlineKeyboard, InputFile } from 'grammy';
 import { config } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
 import {
@@ -404,17 +404,27 @@ bot.callbackQuery(/^track:list(?::(\d+))?$/, async (ctx) => {
 });
 
 bot.callbackQuery(/^track:pick:(\d+)$/, async (ctx) => {
-  await ctx.answerCallbackQuery();
   const id = Number(ctx.match[1]);
   const t = getTrack(id);
-  if (!t) return reply(ctx, 'Песня не найдена (возможно, уже удалена). /edit — начать заново.');
+  if (!t) {
+    await ctx.answerCallbackQuery();
+    return reply(ctx, 'Песня не найдена (возможно, уже удалена). /edit — начать заново.');
+  }
+  // Тост-алерт сразу (загрузка файла занимает пару секунд).
+  await ctx.answerCallbackQuery({ text: 'Загружаю аудио…' });
   const kb = new InlineKeyboard()
     .text('Да, удалить', `track:delyes:${id}`)
     .text('Отмена', 'cancel');
-  // Присылаем сам mp3 с CDN, чтобы можно было прослушать перед удалением.
-  // Если Telegram не смог скачать файл — откатываемся на текстовое подтверждение.
+  // Telegram не может сам скачать файл с CDN (sendAudio по URL отдаёт 400),
+  // поэтому качаем mp3 на сервере и отправляем байтами через InputFile.
+  // Если не вышло — откатываемся на текстовое подтверждение.
   try {
-    await ctx.replyWithAudio(t.url, {
+    await ctx.replyWithChatAction('upload_document'); // индикатор «отправляю…»
+    const res = await fetch(t.url, { signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(`CDN HTTP ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    const fname = t.url.split('/').pop() || 'track.mp3';
+    await ctx.replyWithAudio(new InputFile(buf, fname), {
       caption: `Удалить песню из эфира?\n\n«${t.title}»`,
       title: t.title,
       performer: t.artist || 'Клан Толкай Вода',
