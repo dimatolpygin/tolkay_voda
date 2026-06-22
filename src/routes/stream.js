@@ -1,28 +1,74 @@
 // «Сейчас играет» из эфира: опрашиваем status-json Icecast и отдаём лёгкий JSON.
 // Кеш на несколько секунд — чтобы поллинг с фронта не бил по Icecast на каждый запрос.
+//
+// ICY-метаданные Icecast не умеют надёжно нести кириллицу (поле title приходит
+// пустым/битым). Поэтому в эфир уходит ASCII-слаг имени файла
+// (напр. "47-carstvo-ne-tam-za-goroi"), а человекочитаемое русское название
+// резолвим здесь по tracks.json: slug → { title, artist }.
+import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { isProd } from '../lib/config.js';
+
 const ICECAST_HOST = process.env.ICECAST_HOST || 'icecast';
 const ICECAST_PORT = process.env.ICECAST_PORT || '8000';
 const STATUS_URL = `http://${ICECAST_HOST}:${ICECAST_PORT}/status-json.xsl`;
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const assetsDir = join(__dirname, '..', '..', 'public', 'assets');
+const cdnManifest = join(assetsDir, 'tracks.json');
+const localManifest = join(assetsDir, 'tracks.local.json');
+
+// В dev предпочитаем локальный манифест (как и /tracks), в проде — CDN-манифест.
+function manifestFile() {
+  if (!isProd && existsSync(localManifest)) return localManifest;
+  return cdnManifest;
+}
+
+// slug = имя файла из URL без расширения: .../audio/47-carstvo-....mp3 → 47-carstvo-...
+function slugFromUrl(url) {
+  const base = String(url || '').split('/').pop() || '';
+  return base.replace(/\.[^.]+$/, '').toLowerCase();
+}
+
+// Карта slug → { title, artist } из tracks.json (лёгкий кэш на 60с).
+let trackMap = null;
+let trackMapAt = 0;
+function loadTrackMap() {
+  const now = Date.now();
+  if (trackMap && now - trackMapAt < 60_000) return trackMap;
+  const map = [];
+  try {
+    const path = manifestFile();
+    if (existsSync(path)) {
+      const data = JSON.parse(readFileSync(path, 'utf8'));
+      const list = Array.isArray(data) ? data : data.tracks || [];
+      for (const t of list) {
+        if (t && t.url) {
+          map.push({ slug: slugFromUrl(t.url), title: t.title || '', artist: t.artist || '' });
+        }
+      }
+    }
+  } catch {
+    // битый манифест → пустая карта → фолбэк на бренд на фронте
+  }
+  trackMap = map;
+  trackMapAt = now;
+  return map;
+}
+
+// Резолвим русское название по ASCII-слагу из ICY-метаданных потока.
+// Слаг начинается с уникального префикса "NN-", поэтому includes() безопасен:
+// ни один слаг не является подстрокой другого.
+function resolveBySlug(raw) {
+  const s = String(raw || '').trim().toLowerCase();
+  if (!s) return null;
+  const map = loadTrackMap();
+  return map.find((t) => t.slug && (s === t.slug || s.includes(t.slug))) || null;
+}
+
 let cache = { at: 0, data: null };
 const TTL_MS = 4000;
-
-// ICY-метаданные Icecast — latin1, кириллица приходит битой ('*'/моджибейк).
-// Если в строке нет ни одной буквы — считаем её мусором и отдаём пусто
-// (фронт покажет бренд «Радио Толкай Вода»).
-function cleanMeta(s) {
-  const t = String(s || '').trim();
-  return /\p{L}/u.test(t) ? t : '';
-}
-
-// ICY-метаданные приходят как "Artist - Title" или просто title.
-function splitTitle(raw, fallbackArtist) {
-  const s = String(raw || '').trim();
-  if (!s) return { title: '', artist: cleanMeta(fallbackArtist) };
-  const i = s.indexOf(' - ');
-  if (i > 0) return { artist: cleanMeta(s.slice(0, i)), title: cleanMeta(s.slice(i + 3)) };
-  return { title: cleanMeta(s), artist: cleanMeta(fallbackArtist) };
-}
 
 export default async function streamRoutes(app) {
   app.get('/stream/now', async (req, reply) => {
@@ -40,12 +86,13 @@ export default async function streamRoutes(app) {
           src = src.find((s) => /stream/.test(s.listenurl || '')) || src[0];
         }
         if (src) {
-          const { title, artist } = splitTitle(src.title || src.yp_currently_playing, src.artist);
+          const raw = src.title || src.yp_currently_playing || '';
+          const hit = resolveBySlug(raw);
           data = {
             ok: true,
             online: true,
-            title,
-            artist,
+            title: hit ? hit.title : '',
+            artist: hit ? hit.artist : '',
             listeners: Number(src.listeners) || 0,
           };
         }
