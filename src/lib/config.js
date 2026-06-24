@@ -18,6 +18,12 @@ export const config = {
     process.env.PLAYLIST_PATH ||
     join(__dirname, '..', '..', 'docker', 'liquidsoap', 'playlist.m3u'),
 
+  // ВРЕМЕННОЕ РЕШЕНИЕ (2026-06-24): локальный кэш mp3 эфира на диске сервера.
+  // Liquidsoap играет с диска, а не тянет с CDN Beget на лету — CDN периодически
+  // отдаёт 523 и эфир немеет. В контейнерах — общий том /audio (env AUDIO_CACHE_DIR),
+  // локально — папка в data. Подробнее: CLAUDE.md → «Временное: локальный кэш эфира».
+  audioCacheDir: process.env.AUDIO_CACHE_DIR || join(__dirname, '..', '..', 'data', 'audio'),
+
   s3: {
     region: process.env.S3_REGION || 'ru-central-1',
     endpoint: process.env.S3_ENDPOINT || 'https://s3.ru1.storage.beget.cloud',

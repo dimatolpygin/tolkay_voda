@@ -3,7 +3,12 @@ import {
   PutObjectCommand,
   HeadBucketCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
+import { createWriteStream } from 'node:fs';
+import { rename, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { config } from './config.js';
 
 // Клиент S3 Beget (path-style)
@@ -46,4 +51,16 @@ export async function deleteObject(key) {
   if (!key) return false;
   await s3.send(new DeleteObjectCommand({ Bucket: config.s3.bucket, Key: key }));
   return true;
+}
+
+// Скачивает объект из S3 (напрямую, минуя CDN) в локальный файл.
+// Пишет в .part и атомарно переименовывает — чтобы Liquidsoap не наткнулся
+// на полузаписанный файл. Используется локальным кэшем эфира (audio-cache).
+export async function getObjectToFile(key, destPath) {
+  const res = await s3.send(new GetObjectCommand({ Bucket: config.s3.bucket, Key: key }));
+  await mkdir(dirname(destPath), { recursive: true });
+  const tmp = `${destPath}.part`;
+  await pipeline(res.Body, createWriteStream(tmp));
+  await rename(tmp, destPath);
+  return destPath;
 }
