@@ -24,10 +24,23 @@ const insertPost = db.prepare(
 
 const FORECAST_TITLE = 'Прогноз от Геннадия Серафимовича';
 
+// Сегодняшняя дата YYYY-MM-DD по Москве (UTC+3), независимо от TZ сервера.
+// Сервер/контейнеры работают в UTC, поэтому toISOString() давал бы UTC-дату:
+// прогноз, опубликованный ночью по МСК (00:00–02:59), уезжал на «вчера».
+// en-CA даёт формат ровно YYYY-MM-DD.
+function moscowToday() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
 // Создаёт или обновляет прогноз на сегодня. Принимает структуру из ai.prepareForecast.
 // summary хранит intro (короткий текст для свёрнутого блока), body — полный текст.
 export function upsertForecast(f) {
-  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const date = moscowToday(); // YYYY-MM-DD по Москве
   const row = {
     date,
     title: f.title || FORECAST_TITLE,
