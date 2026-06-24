@@ -283,7 +283,7 @@ bot.callbackQuery('publish', async (ctx) => {
         url,
         position: pos,
       });
-      const n = regeneratePlaylist();
+      const n = await regeneratePlaylist();
       logger.info(
         `Песня добавлена (id ${r.id}, поз ${pos}): «${st.trackTitle}» → ${url}; ` +
           `плейлист пересобран (${n} треков) (@${who(ctx).username}).`
@@ -452,7 +452,7 @@ bot.callbackQuery(/^track:delyes:(\d+)$/, async (ctx) => {
     } catch (e) {
       logger.warn(`Не удалось удалить объект S3 ${t.s3_key}: ${e.message}`);
     }
-    const n = regeneratePlaylist();
+    const n = await regeneratePlaylist();
     logger.info(`Песня удалена (id ${id}): «${t.title}»; плейлист пересобран (${n} треков) (@${who(ctx).username}).`);
     clearState(who(ctx).id);
     await reply(

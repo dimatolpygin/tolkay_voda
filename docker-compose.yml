@@ -19,9 +19,11 @@ services:
       DB_PATH: /app/data/app.db
       ICECAST_HOST: icecast
       PLAYLIST_PATH: /playlist/playlist.m3u
+      AUDIO_CACHE_DIR: /audio
     volumes:
       - app-data:/app/data
       - playlist:/playlist
+      - audio-cache:/audio
     expose:
       - "3000"
 
@@ -72,6 +74,8 @@ services:
     volumes:
       - ./docker/liquidsoap:/etc/liquidsoap:ro
       - playlist:/playlist:ro
+      # ВРЕМЕННОЕ: локальный кэш mp3 — Liquidsoap играет с диска, не с CDN Beget.
+      - audio-cache:/audio:ro
     command: ["liquidsoap", "/etc/liquidsoap/radio.liq"]
 
   bot:
@@ -85,9 +89,11 @@ services:
       NODE_ENV: production
       DB_PATH: /app/data/app.db
       PLAYLIST_PATH: /playlist/playlist.m3u
+      AUDIO_CACHE_DIR: /audio
     volumes:
       - app-data:/app/data
       - playlist:/playlist
+      - audio-cache:/audio
     depends_on:
       - app
     command: ["node", "src/bot/index.js"]
@@ -101,3 +107,4 @@ volumes:
   caddy_data:
   caddy_config:
   playlist: # общий том app/bot ↔ liquidsoap: плейлист эфира из БД
+  audio-cache: # ВРЕМЕННОЕ: локальный кэш mp3 эфира (app/bot пишут ↔ liquidsoap читает)

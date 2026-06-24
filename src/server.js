@@ -6,16 +6,23 @@ import { dirname, join } from 'node:path';
 import { config } from './lib/config.js';
 import { logger } from './lib/logger.js';
 import './lib/db.js'; // инициализация БД при старте
-import { regeneratePlaylist } from './lib/playlist.js';
+import { writePlaylist, regeneratePlaylist } from './lib/playlist.js';
 
 // Плейлист эфира строим из БД при старте — заполняем общий том /playlist,
 // который читает Liquidsoap (reload_mode="watch"). Не валим старт, если не вышло.
+// Сначала пишем плейлист сразу (локальные файлы там, где уже есть в кэше, иначе
+// CDN-URL) — чтобы эфир стартовал без ожидания. Затем в ФОНЕ докачиваем кэш из S3
+// и переписываем плейлист на локальные пути (Liquidsoap перечитает по watch).
+// Так деплой не блокируется на ~170 МБ загрузки. См. src/lib/audio-cache.js.
 try {
-  const n = regeneratePlaylist();
+  const n = writePlaylist();
   logger.info(`Плейлист эфира собран из БД: ${n} треков → ${config.playlistPath}`);
 } catch (err) {
   logger.error({ err }, 'Не удалось собрать плейлист эфира при старте');
 }
+regeneratePlaylist()
+  .then(() => logger.info('Локальный кэш эфира синхронизирован, плейлист обновлён.'))
+  .catch((err) => logger.error({ err }, 'Фоновая синхронизация кэша эфира не удалась'));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
