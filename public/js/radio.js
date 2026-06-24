@@ -17,6 +17,40 @@
   let started = false;
   let nowTimer = null;
 
+  // Авто-переподключение эфира: долгое соединение может разорвать Icecast
+  // (переполнение очереди «отстающего» слушателя), сеть или iOS (фон/блокировка).
+  // Раньше при обрыве плеер просто замолкал и слушатель жал «включить заново».
+  // Теперь возвращаем эфир сами, с backoff; если упорно не отвечает — джукбокс.
+  let userPaused = false; // true только когда слушатель сам нажал «Пауза»
+  let liveRetry = 0; // счётчик попыток (сброс при успешном playing)
+  let reconnectTimer = null;
+  let connecting = false; // идёт попытка (пере)подключения — не дёргаем сторожем
+
+  function clearReconnect() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+  }
+
+  function scheduleLiveReconnect() {
+    if (mode !== 'live' || userPaused) return;
+    if (reconnectTimer || connecting) return;
+    liveRetry += 1;
+    if (liveRetry > 6) {
+      // Эфир упорно не отвечает — уходим в джукбокс, чтобы не молчало.
+      liveRetry = 0;
+      fallbackToJukebox();
+      return;
+    }
+    const delay = Math.min(1500 * liveRetry, 6000);
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      if (mode !== 'live' || userPaused) return;
+      playLive();
+    }, delay);
+  }
+
   // ---------- Джукбокс (фолбэк) ----------
   let tracks = [];
   let queue = [];
@@ -101,6 +135,8 @@
   // Эфир: всегда играем с live-точки. На (пере)старте перезапрашиваем поток.
   async function playLive() {
     mode = 'live';
+    connecting = true;
+    clearReconnect();
     audio.src = STREAM_URL + '?_=' + Date.now();
     playBtn.classList.add('is-loading');
     try {
@@ -108,6 +144,8 @@
       startNowPolling();
     } catch {
       playBtn.classList.remove('is-loading');
+      connecting = false;
+      scheduleLiveReconnect();
     }
   }
 
@@ -191,17 +229,24 @@
     }
     if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     if (audio.paused) {
+      userPaused = false;
       if (mode === 'live') {
         await playLive(); // вернуться в live-точку, а не доигрывать буфер
       } else {
         try { await audio.play(); } catch {}
       }
     } else {
+      userPaused = true; // осознанная пауза — сторож не должен переподключать
+      clearReconnect();
       audio.pause();
     }
   });
 
   audio.addEventListener('playing', () => {
+    // Успешно играем — сбрасываем счётчик переподключений.
+    connecting = false;
+    liveRetry = 0;
+    clearReconnect();
     playBtn.classList.remove('is-loading');
     playBtn.classList.add('is-playing');
     playBtn.setAttribute('aria-pressed', 'true');
@@ -212,19 +257,35 @@
     playBtn.setAttribute('aria-pressed', 'false');
     playBtn.querySelector('.play-btn__label').textContent = 'Слушать радио';
   });
-  // В джукбоксе по окончании трека — следующий. В эфире поток не кончается.
+  // В джукбоксе по окончании трека — следующий. В эфире поток «кончиться» не
+  // должен — если это случилось, соединение разорвали → переподключаемся.
   audio.addEventListener('ended', () => {
     if (mode === 'jukebox') jukeboxPlayNext();
+    else if (mode === 'live' && !userPaused) {
+      connecting = false;
+      scheduleLiveReconnect();
+    }
   });
   audio.addEventListener('error', () => {
     if (!started) return;
     if (mode === 'live') {
-      // Эфир отвалился — переходим на джукбокс, чтобы сайт не «онемел».
-      fallbackToJukebox();
+      // Эфир отвалился — сперва пытаемся вернуть его (scheduleLiveReconnect),
+      // и лишь после серии неудач уходим в джукбокс, чтобы сайт не «онемел».
+      connecting = false;
+      scheduleLiveReconnect();
     } else {
       setTimeout(jukeboxPlayNext, 600); // битый трек — пропускаем
     }
   });
+
+  // Сторож зависаний: если эфир должен играть, но элемент встал (пауза/столл
+  // без события ended/error — бывает на iOS) и это не воля слушателя —
+  // возвращаем эфир. Сам процесс (пере)подключения сторож не трогает.
+  setInterval(() => {
+    if (mode === 'live' && started && !userPaused && !connecting && audio.paused) {
+      scheduleLiveReconnect();
+    }
+  }, 5000);
 
   // ---------- Визуализатор ----------
   // Поток /stream и треки джукбокса (CDN) — для частотного анализа нужен CORS.
