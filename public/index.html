@@ -325,6 +325,29 @@ img { max-width: 100%; display: block; }
 .now__artist { margin: 0; color: var(--ink-soft); font-size: 0.92rem; }
 .now__viz { width: 260px; max-width: 42vw; height: 56px; opacity: .9; }
 
+/* ===== Рекламные баннеры (два слота под плеером) ===== */
+.ads { margin-top: 26px; }
+/* align-items: start — карточка без кнопки не тянется до высоты соседней
+   с кнопкой и не показывает пустую белую полосу снизу */
+.ads__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.ads__grid--one { grid-template-columns: minmax(0, 560px); justify-content: center; }
+.ad {
+  display: block; overflow: hidden; text-decoration: none; color: inherit;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.ad:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+/* aspect-ratio держит высоту карточки до загрузки картинки — без скачка вёрстки */
+.ad__img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--line); }
+.ad__cta {
+  display: flex; align-items: center; justify-content: center;
+  margin: 14px 18px 18px; padding: 11px 18px; border-radius: 12px;
+  background: var(--gold); color: #fff;
+  font-family: var(--font-h); font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; font-size: 0.95rem; text-align: center;
+  transition: background .18s ease;
+}
+.ad:hover .ad__cta { background: var(--gold-2); }
+
 /* ===== Прогноз дня ===== */
 .forecast {
   margin-top: 26px;
@@ -481,6 +504,7 @@ img { max-width: 100%; display: block; }
   .hero { background-image: url('/assets/img/bg-mobile.webp'); min-height: 78vh; }
   .now { grid-template-columns: auto 1fr; }
   .now__viz { grid-column: 1 / -1; width: 100%; max-width: none; }
+  .ads__grid, .ads__grid--one { grid-template-columns: 1fr; }
   .forecast { grid-template-columns: 1fr; }
   .forecast__media { order: -1; }
   .blog__rail { grid-auto-columns: 78%; } /* ~1.2 карточки, скролл вправо */
@@ -558,6 +582,11 @@ img { max-width: 100%; display: block; }
         <p id="nowArtist" class="now__artist">Клан Толкай Вода</p>
       </div>
       <canvas id="viz" class="now__viz" width="520" height="64" aria-hidden="true"></canvas>
+    </section>
+
+    <!-- БАННЕРЫ ПАРТНЁРОВ (два слота, наполняются из БД) -->
+    <section class="ads" id="ads" hidden>
+      <div id="adsGrid" class="ads__grid"></div>
     </section>
 
     <!-- ПРОГНОЗ ДНЯ -->
@@ -671,6 +700,7 @@ img { max-width: 100%; display: block; }
   <script src="/js/nav.js" defer></script>
   <script src="/js/radio.js" defer></script>
   <script src="/js/forecast.js" defer></script>
+  <script src="/js/ads.js" defer></script>
   <script src="/js/blog.js" defer></script>
 </body>
 </html>
