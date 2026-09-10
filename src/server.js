@@ -40,6 +40,7 @@ import forecastRoutes from './routes/forecast.js';
 import postsRoutes from './routes/posts.js';
 import streamRoutes from './routes/stream.js';
 import adsRoutes from './routes/ads.js';
+import homeRoutes from './routes/home.js';
 import seoRoutes from './routes/seo.js';
 
 await app.register(healthRoutes, { prefix: '/api' });
@@ -52,10 +53,15 @@ await app.register(adsRoutes, { prefix: '/api' });
 // SEO-маршруты корня (sitemap.xml, ЧПУ /blog/:slug) — до статики.
 await app.register(seoRoutes);
 
+// Главная — своим маршрутом: сервер подставляет в разметку блок баннеров,
+// чтобы он не появлялся после загрузки и не сдвигал страницу.
+await app.register(homeRoutes);
+
 // Статика (фронт)
 await app.register(fastifyStatic, {
   root: publicDir,
   prefix: '/',
+  index: false, // '/' обслуживает homeRoutes; без этого маршрут дублируется
 });
 
 // SPA-friendly: блог-статья и т.п. отдаём index, 404 для /api

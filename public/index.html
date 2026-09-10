@@ -584,10 +584,8 @@ img { max-width: 100%; display: block; }
       <canvas id="viz" class="now__viz" width="520" height="64" aria-hidden="true"></canvas>
     </section>
 
-    <!-- БАННЕРЫ ПАРТНЁРОВ (два слота, наполняются из БД) -->
-    <section class="ads" id="ads" hidden>
-      <div id="adsGrid" class="ads__grid"></div>
-    </section>
+    <!-- БАННЕРЫ ПАРТНЁРОВ (два слота; сервер подставляет карточки сюда, src/routes/home.js) -->
+    <section class="ads" id="ads" hidden><div id="adsGrid" class="ads__grid"></div></section>
 
     <!-- ПРОГНОЗ ДНЯ -->
     <section class="forecast card" id="forecast" hidden>

@@ -4,6 +4,9 @@
 (() => {
   const section = document.getElementById('ads');
   if (!section) return;
+  // Главную отдаёт сервер с уже готовыми карточками (src/routes/home.js) —
+  // там дорисовывать нечего. Клиентский рендер остаётся для страниц-фолбэков.
+  if (section.dataset.ssr === '1') return;
   const grid = document.getElementById('adsGrid');
 
   function card(ad) {
