@@ -2,6 +2,7 @@
 // Меняются без передеплоя — главная пересобирается при изменении набора баннеров.
 import { AD_SLOTS, getAdRaw, setAd, clearAd, normalizeSlot } from '../../lib/ads-store.js';
 import { uploadImage } from '../../lib/media.js';
+import { imageSize, adImageWarning } from '../../lib/image-info.js';
 import { deleteObject } from '../../lib/s3.js';
 import { readForm, redirect, str, guard, FormError } from '../forms.js';
 import {
@@ -40,7 +41,7 @@ function slotCard(slot, csrf) {
           name: 'image',
           label: 'Картинка баннера',
           accept: 'image/*',
-          hint: 'Соотношение 16:9, лучше 1200×675. JPG, PNG или WEBP до 8 МБ.',
+          hint: 'Ровно 16:9 — лучше 1200×675. Картинку другого формата на сайте обрежет по краям. JPG, PNG или WEBP до 8 МБ.',
         }),
         input({
           name: 'imageUrl',
@@ -99,8 +100,12 @@ export default async function adsRoutes(app) {
       const before = getAdRaw(slot);
       let imageUrl = str(fields, 'imageUrl', 2000);
       let imageKey = before?.image_key || '';
+      let warning = '';
 
       if (files.image) {
+        // Картинку меряем до загрузки: карточка на сайте всегда 16:9 с обрезкой
+        // по краям, и логотип вместо баннера превращается в размытый обрезок.
+        warning = adImageWarning(imageSize(files.image.buffer));
         const up = await uploadImage(files.image, 'ads');
         // Старый файл удаляем только после успешной загрузки нового —
         // иначе при сбое слот остался бы вообще без картинки.
@@ -134,8 +139,15 @@ export default async function adsRoutes(app) {
         linkUrl: str(fields, 'linkUrl', 2000),
         buttonText: str(fields, 'buttonText', 40),
       });
-      req.log.info(`Панель: баннер в слоте ${slot} обновлён — «${req.adminUser.login}».`);
-      return redirect(reply, '/admin/ads', { ok: `Баннер в слоте ${slot} сохранён.` });
+      req.log.info(
+        `Панель: баннер в слоте ${slot} обновлён — «${req.adminUser.login}».` +
+          (warning ? ` Предупреждение: ${warning}` : '')
+      );
+      return redirect(
+        reply,
+        '/admin/ads',
+        warning ? { warn: warning } : { ok: `Баннер в слоте ${slot} сохранён.` }
+      );
     })
   );
 
