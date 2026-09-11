@@ -2,7 +2,7 @@
 // Меняются без передеплоя — главная пересобирается при изменении набора баннеров.
 import { AD_SLOTS, getAdRaw, setAd, clearAd, normalizeSlot } from '../../lib/ads-store.js';
 import { uploadImage } from '../../lib/media.js';
-import { imageSize, adImageWarning } from '../../lib/image-info.js';
+import { checkAdImage } from '../../lib/image-info.js';
 import { deleteObject } from '../../lib/s3.js';
 import { readForm, redirect, str, guard, FormError } from '../forms.js';
 import {
@@ -41,7 +41,7 @@ function slotCard(slot, csrf) {
           name: 'image',
           label: 'Картинка баннера',
           accept: 'image/*',
-          hint: 'Ровно 16:9 — лучше 1200×675. Картинку другого формата на сайте обрежет по краям. JPG, PNG или WEBP до 8 МБ.',
+          hint: 'Только 16:9 — 1200×675 точек. Картинку другого формата панель не примет: на сайте её обрезало бы по краям. JPG или PNG, лучше легче 600 КБ.',
         }),
         input({
           name: 'imageUrl',
@@ -103,9 +103,13 @@ export default async function adsRoutes(app) {
       let warning = '';
 
       if (files.image) {
-        // Картинку меряем до загрузки: карточка на сайте всегда 16:9 с обрезкой
-        // по краям, и логотип вместо баннера превращается в размытый обрезок.
-        warning = adImageWarning(imageSize(files.image.buffer));
+        // Проверяем ДО загрузки в хранилище: при отказе в бакете не остаётся мусора,
+        // а в слоте — прежний баннер. Карточка на сайте всегда 16:9 с обрезкой
+        // по краям, поэтому картинку другого формата не берём вовсе.
+        const verdict = checkAdImage(files.image.buffer);
+        if (verdict.error) throw new FormError(verdict.error);
+        warning = verdict.warning || '';
+
         const up = await uploadImage(files.image, 'ads');
         // Старый файл удаляем только после успешной загрузки нового —
         // иначе при сбое слот остался бы вообще без картинки.

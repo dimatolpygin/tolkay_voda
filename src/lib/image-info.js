@@ -64,24 +64,61 @@ export function imageSize(buffer) {
   return pngSize(buffer) || jpegSize(buffer) || webpSize(buffer) || null;
 }
 
-// Баннер рисуется в 16:9 с обрезкой по краям (object-fit: cover).
-export const AD_RATIO = 16 / 9;
-const MIN_AD_WIDTH = 800;
-const RATIO_TOLERANCE = 0.25; // 16:9 ± четверть — от 4:3 до совсем широких
+// Баннер рисуется в 16:9 с обрезкой по краям (object-fit: cover), поэтому
+// картинку не того формата панель не принимает вовсе: молчаливое «готово» с пустым
+// местом на сайте хуже честного отказа. Решение принято 11.09.2026, после того как
+// в слот подряд уехали логотип 181×65, скриншот 960×661 и картинка 4:3 на 1,3 МБ.
+export const AD_RATIO = 16 / 9; // 1.78
 
-// Предупреждение для панели или '' , если с картинкой всё в порядке.
-// Ничего не запрещает: клиент может сознательно поставить нестандартную картинку.
-export function adImageWarning(size) {
-  if (!size?.width || !size?.height) return '';
+// Допустимые пропорции: от 16:10 до 2:1. В этих границах обрезается не больше
+// десятой части картинки — незаметно.
+const MIN_RATIO = 1.55;
+const MAX_RATIO = 2.05;
+
+// Уже меньше 800 точек по ширине картинка мылится на десктопе.
+const MIN_AD_WIDTH = 800;
+
+// Выше этого веса баннер заметно тормозит: 1,3-мегабайтный PNG приезжал
+// с CDN за 15 секунд, и посетитель всё это время видел пустое место.
+const HEAVY_BYTES = 600 * 1024;
+
+const SPEC = 'Нужна картинка 16:9 — 1200×675 точек, JPG или PNG.';
+
+// Что не так с картинкой баннера:
+//   { error }   — не берём вовсе, показываем причину;
+//   { warning } — берём, но предупреждаем;
+//   {}          — всё в порядке.
+export function checkAdImage(buffer) {
+  const size = imageSize(buffer);
+  if (!size?.width || !size?.height) {
+    return { error: `Не удалось прочитать размеры картинки. ${SPEC}` };
+  }
+
   const { width, height } = size;
   const ratio = width / height;
-  const spec = `Нужен формат 16:9, лучше 1200×675.`;
 
-  if (Math.abs(ratio - AD_RATIO) > AD_RATIO * RATIO_TOLERANCE) {
-    return `Баннер сохранён, но картинка ${width}×${height} — это не 16:9, на сайте её обрежет по краям. ${spec}`;
+  if (ratio < MIN_RATIO || ratio > MAX_RATIO) {
+    const shape = ratio < MIN_RATIO ? 'слишком высокая' : 'слишком вытянутая';
+    return {
+      error:
+        `Картинка ${width}×${height} — ${shape} для баннера, её обрезало бы по краям. ${SPEC}`,
+    };
   }
+
   if (width < MIN_AD_WIDTH) {
-    return `Баннер сохранён, но картинка узкая (${width}×${height}) — на широком экране будет размытой. ${spec}`;
+    return {
+      error: `Картинка мелкая — ${width}×${height}, на большом экране будет размытой. ${SPEC}`,
+    };
   }
-  return '';
+
+  if (buffer.length > HEAVY_BYTES) {
+    const mb = (buffer.length / (1024 * 1024)).toFixed(1);
+    return {
+      warning:
+        `Баннер поставлен, но файл тяжёлый — ${mb} МБ. ` +
+        'Посетители увидят его не сразу. Пересохраните картинку в JPG, будет в разы легче.',
+    };
+  }
+
+  return {};
 }
