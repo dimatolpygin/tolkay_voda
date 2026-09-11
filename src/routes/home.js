@@ -1,10 +1,14 @@
 // Главная отдаётся сервером, а не статикой: блок рекламных баннеров подставляется
-// в разметку до отправки. Иначе он появляется после ответа /api/ads и толкает вниз
+// в разметку до отправки. Иначе он появляется после ответа /api/partners и толкает вниз
 // прогноз и блог — измеренный CLS на десктопе рос с 0.057 до 0.098.
 //
 // Если баннеров нет, отдаётся исходный HTML без изменений, и блок остаётся скрытым.
 // На страницах-фолбэках (setNotFoundHandler) серверной подстановки нет — там блок
-// дорисовывает public/js/ads.js, он проверяет атрибут data-ssr.
+// дорисовывает public/js/partners.js, он проверяет атрибут data-ssr.
+//
+// Классы и id блока НЕ содержат слов ad/ads: блокировщики рекламы прячут такие
+// элементы по косметическим фильтрам, и у клиента баннер пропадал именно поэтому
+// (проверено в его браузере 11.09.2026: .ad получал display:none не от нашего CSS).
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -17,7 +21,7 @@ const indexPath = join(__dirname, '..', '..', 'public', 'index.html');
 const indexHtml = readFileSync(indexPath, 'utf8');
 
 // Заглушка блока в index.html; заменяем её целиком на готовые карточки.
-const ADS_BLOCK = /<section class="ads" id="ads"[\s\S]*?<\/section>/;
+const ADS_BLOCK = /<section class="partners" id="partners"[\s\S]*?<\/section>/;
 
 const esc = (s) =>
   String(s ?? '')
@@ -30,11 +34,11 @@ const esc = (s) =>
 function card(ad) {
   // Подпись кнопки уже даёт ссылке доступное имя — не дублируем его в alt.
   const alt = ad.buttonText ? '' : 'Баннер партнёра';
-  const cta = ad.buttonText ? `<span class="ad__cta">${esc(ad.buttonText)}</span>` : '';
+  const cta = ad.buttonText ? `<span class="partner__cta">${esc(ad.buttonText)}</span>` : '';
   return (
-    `<a class="ad card" href="${esc(ad.linkUrl)}" target="_blank"` +
+    `<a class="partner card" href="${esc(ad.linkUrl)}" target="_blank"` +
     ` rel="noopener noreferrer nofollow sponsored">` +
-    `<img class="ad__img" src="${esc(ad.imageUrl)}" alt="${esc(alt)}" loading="lazy" decoding="async" />` +
+    `<img class="partner__img" src="${esc(ad.imageUrl)}" alt="${esc(alt)}" loading="lazy" decoding="async" />` +
     `${cta}</a>`
   );
 }
@@ -49,10 +53,10 @@ function renderHome() {
 
   let html = indexHtml;
   if (ads.length) {
-    const one = ads.length === 1 ? ' ads__grid--one' : '';
+    const one = ads.length === 1 ? ' partners__grid--one' : '';
     const block =
-      `<section class="ads" id="ads" data-ssr="1">` +
-      `<div id="adsGrid" class="ads__grid${one}">${ads.map(card).join('')}</div>` +
+      `<section class="partners" id="partners" data-ssr="1">` +
+      `<div id="partnersGrid" class="partners__grid${one}">${ads.map(card).join('')}</div>` +
       `</section>`;
     html = html.replace(ADS_BLOCK, block);
   }
