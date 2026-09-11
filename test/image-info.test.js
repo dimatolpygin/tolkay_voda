@@ -56,6 +56,17 @@ describe('предупреждение о картинке баннера', () =
     assert.match(w, /1200×675/);
   });
 
+  test('скриншот вместо баннера — предупреждаем', () => {
+    // 960×661 — пропорция 1.45 против 1.78; такому обрежет по 9% сверху и снизу.
+    assert.match(adImageWarning({ width: 960, height: 661 }), /не 16:9/);
+  });
+
+  test('близкие пропорции пропускаем без шума', () => {
+    assert.equal(adImageWarning({ width: 1600, height: 1000 }), ''); // 16:10
+    assert.equal(adImageWarning({ width: 1200, height: 630 }), ''); // og-картинка
+    assert.equal(adImageWarning({ width: 2000, height: 1000 }), ''); // 2:1
+  });
+
   test('правильная пропорция, но мелкая картинка — предупреждаем', () => {
     assert.match(adImageWarning({ width: 480, height: 270 }), /размытой/);
   });

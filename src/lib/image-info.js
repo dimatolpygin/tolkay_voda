@@ -65,9 +65,14 @@ export function imageSize(buffer) {
 }
 
 // Баннер рисуется в 16:9 с обрезкой по краям (object-fit: cover).
-export const AD_RATIO = 16 / 9;
+export const AD_RATIO = 16 / 9; // 1.78
 const MIN_AD_WIDTH = 800;
-const RATIO_TOLERANCE = 0.25; // 16:9 ± четверть — от 4:3 до совсем широких
+
+// Допустимые пропорции: от 16:10 до 2:1. В этих границах обрезается не больше
+// десятой части картинки — незаметно. За ними начинается то, ради чего проверка
+// и появилась: логотип 181×65 (2.78) и скриншот 960×661 (1.45).
+const MIN_RATIO = 1.55;
+const MAX_RATIO = 2.05;
 
 // Предупреждение для панели или '' , если с картинкой всё в порядке.
 // Ничего не запрещает: клиент может сознательно поставить нестандартную картинку.
@@ -75,9 +80,9 @@ export function adImageWarning(size) {
   if (!size?.width || !size?.height) return '';
   const { width, height } = size;
   const ratio = width / height;
-  const spec = `Нужен формат 16:9, лучше 1200×675.`;
+  const spec = 'Нужен формат 16:9, лучше 1200×675.';
 
-  if (Math.abs(ratio - AD_RATIO) > AD_RATIO * RATIO_TOLERANCE) {
+  if (ratio < MIN_RATIO || ratio > MAX_RATIO) {
     return `Баннер сохранён, но картинка ${width}×${height} — это не 16:9, на сайте её обрежет по краям. ${spec}`;
   }
   if (width < MIN_AD_WIDTH) {
