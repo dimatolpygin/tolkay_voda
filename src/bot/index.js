@@ -15,7 +15,7 @@ import {
   reprocessForecast,
   deleteForecast,
   deletePost,
-} from './store.js';
+} from '../lib/content-store.js';
 import { largestPhoto, uploadTelegramPhoto, uploadTelegramAudio } from './media.js';
 import { prepareForecast, prepareForecastFallback, aiEnabled } from '../lib/ai.js';
 import {

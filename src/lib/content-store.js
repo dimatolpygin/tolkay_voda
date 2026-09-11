@@ -1,6 +1,8 @@
-// Запись контента из бота в SQLite: прогноз дня (upsert по дате) и статьи блога.
-import { db } from '../lib/db.js';
-import { uniqueSlug } from '../lib/slug.js';
+// Контент сайта в SQLite: прогноз дня (upsert по дате) и статьи блога.
+// Общий слой для бота (этапы 5–14) и веб-панели (этап 17) — логика публикации
+// не переписывается заново, поэтому после удаления бота ничего не ломается.
+import { db } from './db.js';
+import { uniqueSlug } from './slug.js';
 
 const findForecastByDate = db.prepare('SELECT id FROM forecast WHERE date = ?');
 // Позиционные параметры (?) — node:sqlite надёжно работает с ними,
@@ -96,7 +98,8 @@ const reprocessForecastStmt = db.prepare(
 );
 
 // Белые списки колонок — имена подставляются в SQL, поэтому только из набора.
-const FORECAST_FIELDS = new Set(['intro', 'water', 'color', 'food', 'advice', 'subtitle', 'image_url']);
+// body добавлен для панели (этап 17): полный текст правится руками, без прогона через ИИ.
+const FORECAST_FIELDS = new Set(['intro', 'water', 'color', 'food', 'advice', 'subtitle', 'body', 'image_url']);
 const POST_FIELDS = new Set(['title', 'body', 'image_url']);
 
 export function listRecentForecasts(limit = 10) {

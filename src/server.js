@@ -42,6 +42,7 @@ import streamRoutes from './routes/stream.js';
 import adsRoutes from './routes/ads.js';
 import homeRoutes from './routes/home.js';
 import seoRoutes from './routes/seo.js';
+import adminPlugin from './admin/index.js';
 
 await app.register(healthRoutes, { prefix: '/api' });
 await app.register(tracksRoutes, { prefix: '/api' });
@@ -52,6 +53,10 @@ await app.register(adsRoutes, { prefix: '/api' });
 
 // SEO-маршруты корня (sitemap.xml, ЧПУ /blog/:slug) — до статики.
 await app.register(seoRoutes);
+
+// Панель управления (этап 17). Свой префикс, своя авторизация, свой 404 —
+// всё внутри /admin инкапсулировано и остальной сайт не задевает.
+await app.register(adminPlugin, { prefix: '/admin' });
 
 // Главная — своим маршрутом: сервер подставляет в разметку блок баннеров,
 // чтобы он не появлялся после загрузки и не сдвигал страницу.

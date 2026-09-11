@@ -42,6 +42,14 @@ export const config = {
       .map(Number),
   },
 
+  // Панель управления (этап 17). Первый аккаунт заводится из этих переменных
+  // при первом старте; дальше логин и пароль живут в БД, .env больше не читается.
+  admin: {
+    login: (process.env.ADMIN_LOGIN || '').trim(),
+    password: process.env.ADMIN_PASSWORD || '',
+    sessionDays: num(process.env.ADMIN_SESSION_DAYS, 30),
+  },
+
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
     model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
