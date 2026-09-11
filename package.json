@@ -14,6 +14,7 @@
     "upload:tracks": "node scripts/upload-tracks.js",
     "seed:forecast": "node scripts/seed-forecast.js",
     "seed:posts": "node scripts/seed-posts.js",
+    "ads": "node scripts/set-ad.js",
     "test": "node --test"
   },
   "dependencies": {

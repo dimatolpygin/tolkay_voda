@@ -74,6 +74,21 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_tracks_position ON tracks(position, id);
 `);
 
+// ---------- Рекламные баннеры (майлстоун 4, этап 16) ----------
+// Ровно два фиксированных слота под плеером — без ротации и пула рекламодателей
+// (решение клиента). Слот без строки считается пустым и на сайте не рисуется.
+// image_key хранится, чтобы на этапе 17 панель могла заменить/удалить объект в S3.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS ads (
+    slot        INTEGER PRIMARY KEY,      -- 1 или 2
+    image_key   TEXT,                     -- ключ объекта в S3 (для замены/удаления)
+    image_url   TEXT NOT NULL,            -- публичный CDN-URL картинки 16:9
+    link_url    TEXT NOT NULL,            -- куда ведёт баннер (только http/https)
+    button_text TEXT,                     -- подпись кнопки; пусто → кликабельна вся картинка
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 // Сид: при пустой таблице переносим текущие треки из public/assets/tracks.json
 // (одноразово; дальше источник правды — БД, файл больше не редактируется).
 const tracksSeeded = db.prepare('SELECT COUNT(*) AS n FROM tracks').get().n;
