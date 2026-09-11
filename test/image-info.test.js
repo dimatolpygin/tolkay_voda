@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { imageSize, adImageWarning } from '../src/lib/image-info.js';
+import { imageSize, checkAdImage } from '../src/lib/image-info.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const asset = (name) => readFileSync(join(__dirname, '..', 'public', 'assets', 'img', name));
@@ -43,36 +43,56 @@ describe('размер картинки из заголовка', () => {
   });
 });
 
-describe('предупреждение о картинке баннера', () => {
-  test('16:9 нужного размера — молчим', () => {
-    assert.equal(adImageWarning({ width: 1200, height: 675 }), '');
-    assert.equal(adImageWarning({ width: 1920, height: 1080 }), '');
+// Синтетический PNG заданного размера и веса: проверке важны только шапка IHDR
+// и длина файла.
+function png(width, height, bytes = 50_000) {
+  const b = Buffer.alloc(Math.max(24, bytes));
+  b.writeUInt32BE(0x89504e47, 0);
+  b.writeUInt32BE(width, 16);
+  b.writeUInt32BE(height, 20);
+  return b;
+}
+
+describe('проверка картинки баннера', () => {
+  test('16:9 нужного размера — берём молча', () => {
+    assert.deepEqual(checkAdImage(png(1200, 675)), {});
+    assert.deepEqual(checkAdImage(png(1920, 1080)), {});
   });
 
-  test('логотип вместо баннера — предупреждаем', () => {
-    // Ровно тот случай, из-за которого предупреждение и появилось: 181x65.
-    const w = adImageWarning({ width: 181, height: 65 });
-    assert.match(w, /не 16:9/);
-    assert.match(w, /1200×675/);
+  test('близкие пропорции тоже берём', () => {
+    assert.deepEqual(checkAdImage(png(1600, 1000)), {}); // 16:10
+    assert.deepEqual(checkAdImage(png(1200, 630)), {}); // og-картинка
+    assert.deepEqual(checkAdImage(png(2000, 1000)), {}); // 2:1
   });
 
-  test('скриншот вместо баннера — предупреждаем', () => {
-    // 960×661 — пропорция 1.45 против 1.78; такому обрежет по 9% сверху и снизу.
-    assert.match(adImageWarning({ width: 960, height: 661 }), /не 16:9/);
+  test('логотип вместо баннера — отказ с причиной', () => {
+    // Первый случай из жизни: логотип 181×65 растянуло и обрезало.
+    const v = checkAdImage(png(181, 65));
+    assert.match(v.error, /181×65/);
+    assert.match(v.error, /вытянутая/);
+    assert.match(v.error, /1200×675/);
+    assert.equal(v.warning, undefined);
   });
 
-  test('близкие пропорции пропускаем без шума', () => {
-    assert.equal(adImageWarning({ width: 1600, height: 1000 }), ''); // 16:10
-    assert.equal(adImageWarning({ width: 1200, height: 630 }), ''); // og-картинка
-    assert.equal(adImageWarning({ width: 2000, height: 1000 }), ''); // 2:1
+  test('скриншот 4:3 — отказ с причиной', () => {
+    // Второй и третий случай: 960×661 и 1448×1086.
+    assert.match(checkAdImage(png(960, 661)).error, /высокая/);
+    assert.match(checkAdImage(png(1448, 1086)).error, /1448×1086/);
   });
 
-  test('правильная пропорция, но мелкая картинка — предупреждаем', () => {
-    assert.match(adImageWarning({ width: 480, height: 270 }), /размытой/);
+  test('правильная пропорция, но мелкая картинка — отказ', () => {
+    assert.match(checkAdImage(png(480, 270)).error, /размытой/);
   });
 
-  test('размер неизвестен — не выдумываем', () => {
-    assert.equal(adImageWarning(null), '');
-    assert.equal(adImageWarning({ width: 0, height: 0 }), '');
+  test('тяжёлый файл — берём, но предупреждаем', () => {
+    const v = checkAdImage(png(1200, 675, 1_325_933));
+    assert.equal(v.error, undefined);
+    assert.match(v.warning, /1\.3 МБ/);
+    assert.match(v.warning, /JPG/);
+  });
+
+  test('размеры не читаются — отказ, а не молчание', () => {
+    assert.match(checkAdImage(Buffer.from('это не картинка, а просто текст тут')).error, /размеры/);
+    assert.match(checkAdImage(Buffer.alloc(4)).error, /размеры/);
   });
 });
