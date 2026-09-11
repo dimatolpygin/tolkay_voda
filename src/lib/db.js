@@ -89,6 +89,31 @@ db.exec(`
   );
 `);
 
+// ---------- Панель управления (майлстоун 4, этап 17) ----------
+// Своя авторизация вместо Telegram-бота: клиент не может пользоваться ботом.
+// Пароль лежит только хешем (scrypt, см. src/admin/auth.js) — в открытом виде
+// нигде, включая логи. Сессии в БД, а не в памяти: рестарт контейнера при деплое
+// не должен разлогинивать клиента на телефоне.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS admins (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    login                TEXT UNIQUE NOT NULL,
+    password_hash        TEXT NOT NULL,
+    must_change_password INTEGER NOT NULL DEFAULT 0,  -- 1 у аккаунта из .env
+    created_at           TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS admin_sessions (
+    token_hash  TEXT PRIMARY KEY,          -- sha256 от cookie; сам токен не хранится
+    admin_id    INTEGER NOT NULL,
+    csrf        TEXT NOT NULL,             -- токен для форм этой сессии
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at  TEXT NOT NULL,
+    FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_admin_sessions_admin ON admin_sessions(admin_id);
+`);
+
 // Сид: при пустой таблице переносим текущие треки из public/assets/tracks.json
 // (одноразово; дальше источник правды — БД, файл больше не редактируется).
 const tracksSeeded = db.prepare('SELECT COUNT(*) AS n FROM tracks').get().n;
