@@ -33,6 +33,7 @@
   --gold: #c79350;
   --gold-2: #a9732f;
   --danger: #b23c3c;
+  --warn: #8a5a12;
   --ok: #2f7a52;
   --radius: 16px;
   --shadow-sm: 0 8px 22px -16px rgba(20, 35, 50, 0.5);
@@ -142,6 +143,7 @@ a { color: var(--gold-2); }
 }
 .flash--ok { background: #e8f4ed; color: var(--ok); border-color: #cbe6d8; }
 .flash--err { background: #fbeaea; color: var(--danger); border-color: #f0d2d2; }
+.flash--warn { background: #fdf3e3; color: #8a5a12; border-color: #f0dfc2; }
 
 /* ===== Формы ===== */
 .form { margin: 0; }

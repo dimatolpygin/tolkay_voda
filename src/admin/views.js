@@ -40,10 +40,9 @@ function tabs(active) {
 
 // Одноразовое сообщение после редиректа. Текст приходит в query и всегда экранируется.
 function flash(query) {
-  const ok = query?.ok;
-  const err = query?.err;
-  if (ok) return `<p class="flash flash--ok">${esc(ok)}</p>`;
-  if (err) return `<p class="flash flash--err">${esc(err)}</p>`;
+  for (const kind of ['err', 'warn', 'ok']) {
+    if (query?.[kind]) return `<p class="flash flash--${kind}">${esc(query[kind])}</p>`;
+  }
   return '';
 }
 

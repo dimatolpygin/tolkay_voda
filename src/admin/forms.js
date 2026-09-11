@@ -50,12 +50,10 @@ export async function readForm(req) {
 export const str = (fields, name, max = 10000) => String(fields?.[name] ?? '').trim().slice(0, max);
 
 // Редирект после POST (303): обновление страницы не повторяет отправку формы.
+// warn — «сделано, но посмотри»: сохранить сохранили, а результат может огорчить.
 export function redirect(reply, path, msg) {
-  const qs = msg?.ok
-    ? `?ok=${encodeURIComponent(msg.ok)}`
-    : msg?.err
-      ? `?err=${encodeURIComponent(msg.err)}`
-      : '';
+  const kind = msg?.err ? 'err' : msg?.warn ? 'warn' : msg?.ok ? 'ok' : null;
+  const qs = kind ? `?${kind}=${encodeURIComponent(msg[kind])}` : '';
   return reply.code(303).header('location', path + qs).send();
 }
 
