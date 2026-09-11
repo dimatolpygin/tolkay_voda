@@ -39,7 +39,7 @@ import tracksRoutes from './routes/tracks.js';
 import forecastRoutes from './routes/forecast.js';
 import postsRoutes from './routes/posts.js';
 import streamRoutes from './routes/stream.js';
-import adsRoutes from './routes/ads.js';
+import partnersRoutes from './routes/partners.js';
 import homeRoutes from './routes/home.js';
 import seoRoutes from './routes/seo.js';
 import adminPlugin from './admin/index.js';
@@ -49,7 +49,7 @@ await app.register(tracksRoutes, { prefix: '/api' });
 await app.register(forecastRoutes, { prefix: '/api' });
 await app.register(postsRoutes, { prefix: '/api' });
 await app.register(streamRoutes, { prefix: '/api' });
-await app.register(adsRoutes, { prefix: '/api' });
+await app.register(partnersRoutes, { prefix: '/api' });
 
 // SEO-маршруты корня (sitemap.xml, ЧПУ /blog/:slug) — до статики.
 await app.register(seoRoutes);

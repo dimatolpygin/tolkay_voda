@@ -110,7 +110,7 @@ export default async function adsRoutes(app) {
         if (verdict.error) throw new FormError(verdict.error);
         warning = verdict.warning || '';
 
-        const up = await uploadImage(files.image, 'ads');
+        const up = await uploadImage(files.image, 'partners');
         // Старый файл удаляем только после успешной загрузки нового —
         // иначе при сбое слот остался бы вообще без картинки.
         if (before?.image_key && before.image_key !== up.key) {

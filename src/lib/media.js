@@ -37,7 +37,7 @@ function imageExt(file) {
 
 const mimeForExt = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 
-// Заливает картинку под префиксом (`forecast` | `blog` | `ads`).
+// Заливает картинку под префиксом (`forecast` | `blog` | `partners`).
 // Возвращает { url, key } — key нужен, чтобы потом заменить или удалить объект.
 export async function uploadImage(file, prefix) {
   if (!file?.buffer?.length) throw new MediaError('Файл картинки пустой');
