@@ -1,4 +1,6 @@
 // Страница статьи: грузит /api/posts/:slug по ?slug= и рендерит.
+import { videoEmbed } from './video-embed.js';
+
 (() => {
   const view = document.getElementById('postView');
   const state = document.getElementById('postState');
@@ -26,30 +28,59 @@
     view.hidden = true;
   }
 
-  // Рендер тела статьи: «## Заголовок» → подзаголовки, остальное — абзацы.
+  // Плеер собираем сами из одного разобранного адреса: вставленный редактором
+  // HTML в страницу не попадает.
+  function player(video) {
+    const box = document.createElement('div');
+    box.className = 'post-view__video';
+    const frame = document.createElement('iframe');
+    frame.src = video.src;
+    frame.title = `Видео ${video.name}`;
+    frame.loading = 'lazy';
+    frame.allowFullscreen = true;
+    frame.setAttribute('allow', 'clipboard-write; autoplay; encrypted-media; fullscreen; picture-in-picture');
+    frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    box.append(frame);
+    return box;
+  }
+
+  // Рендер тела статьи: «## Заголовок» → подзаголовки, строка с видео → плеер,
+  // остальное — абзацы. Текст рядом с видео остаётся на месте: видео его дополняет,
+  // а не заменяет.
   function renderBody(container, text) {
     container.replaceChildren();
     const blocks = String(text || '').replace(/\r\n/g, '\n').split(/\n{2,}/);
     for (const block of blocks) {
       if (!block.trim()) continue;
-      for (const line of block.split('\n')) {
-        const hm = /^##\s+(.*)$/.exec(line);
-        if (hm) {
-          const h = document.createElement('h2');
-          h.textContent = hm[1].trim();
-          container.append(h);
-        }
-      }
-      const para = block
-        .split('\n')
-        .filter((l) => !/^##\s+/.test(l))
-        .join('\n')
-        .trim();
-      if (para) {
+
+      let buf = [];
+      const flush = () => {
+        const para = buf.join('\n').trim();
+        buf = [];
+        if (!para) return;
         const p = document.createElement('p');
         p.textContent = para;
         container.append(p);
+      };
+
+      for (const line of block.split('\n')) {
+        const hm = /^##\s+(.*)$/.exec(line);
+        if (hm) {
+          flush();
+          const h = document.createElement('h2');
+          h.textContent = hm[1].trim();
+          container.append(h);
+          continue;
+        }
+        const video = videoEmbed(line);
+        if (video) {
+          flush();
+          container.append(player(video));
+          continue;
+        }
+        buf.push(line);
       }
+      flush();
     }
   }
 

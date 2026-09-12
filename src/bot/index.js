@@ -29,6 +29,7 @@ import {
 import { regeneratePlaylist } from '../lib/playlist.js';
 import { deleteObject } from '../lib/s3.js';
 import { slugify } from '../lib/slug.js';
+import { excerptOf } from '../lib/post-text.js';
 
 const stripExt = (n) => String(n || '').replace(/\.[^.]+$/, '').trim();
 
@@ -688,7 +689,7 @@ async function toPreview(ctx, st) {
   // Статья: заголовок и тело собраны на отдельных шагах.
   const title = (st.title || '').trim();
   const body = (st.body || '').trim();
-  const excerpt = (body.split(/\n\s*\n/)[0] || body).slice(0, 180).trim();
+  const excerpt = excerptOf(body);
   st.prepared = { title, excerpt, body };
 
   const lines = [

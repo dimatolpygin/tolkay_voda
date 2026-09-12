@@ -436,6 +436,13 @@ img { max-width: 100%; display: block; }
 .post-view__img { width: 100%; border-radius: 14px; box-shadow: var(--shadow-sm); margin: 0 0 22px; }
 .post-view__body { color: var(--ink); font-size: 1.05rem; }
 .post-view__body p { white-space: pre-line; margin: 0 0 14px; }
+/* Видео в теле статьи: рамка 16:9 держит высоту до загрузки плеера */
+.post-view__video {
+  position: relative; aspect-ratio: 16 / 9; width: 100%;
+  margin: 0 0 18px; border-radius: 14px; overflow: hidden;
+  background: #000; box-shadow: var(--shadow-sm);
+}
+.post-view__video iframe { display: block; width: 100%; height: 100%; border: 0; }
 .post-view__body h2 {
   font-family: var(--font-h); font-weight: 700; font-size: 1.2rem; color: var(--gold-2);
   text-transform: uppercase; letter-spacing: .02em; margin: 22px 0 8px;

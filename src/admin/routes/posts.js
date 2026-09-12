@@ -7,6 +7,7 @@ import {
   deletePost,
 } from '../../lib/content-store.js';
 import { uploadImage } from '../../lib/media.js';
+import { excerptOf } from '../../lib/post-text.js';
 import { readForm, redirect, str, guard, FormError } from '../forms.js';
 import {
   btnLink,
@@ -27,8 +28,6 @@ import {
 
 const ACTIVE = '/admin/posts';
 
-// Анонс для карточки в ленте — первый абзац. Та же логика, что в updatePostField.
-const excerptOf = (body) => (String(body).split(/\n\s*\n/)[0] || body).slice(0, 180).trim();
 
 function listBlock(rows) {
   if (!rows.length) return empty('Статей пока нет.');
@@ -68,7 +67,9 @@ export default async function postsRoutes(app) {
                 label: 'Текст статьи',
                 rows: 14,
                 required: true,
-                hint: 'Абзацы разделяйте пустой строкой. Первый абзац станет анонсом в ленте.',
+                hint:
+                  'Абзацы разделяйте пустой строкой. Первый абзац станет анонсом в ленте. ' +
+                  'Видео: положите отдельной строкой код с RuTube, VK или YouTube — или просто ссылку на ролик. На странице появится плеер, текст никуда не денется.',
               }),
               fileField({
                 name: 'photo',

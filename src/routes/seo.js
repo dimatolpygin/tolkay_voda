@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { db } from '../lib/db.js';
+import { withoutVideo } from '../lib/post-text.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const postHtmlPath = join(__dirname, '..', '..', 'public', 'post.html');
@@ -75,7 +76,7 @@ export default async function seoRoutes(app) {
 
     const url = `${BASE}/blog/${encodeURIComponent(post.slug)}`;
     const title = `${plain(post.title)} — Радио «Толкай Вода»`;
-    const desc = plain(post.excerpt || post.body).slice(0, 200);
+    const desc = (plain(post.excerpt) || plain(withoutVideo(post.body))).slice(0, 200);
     const image = absImage(post.image_url);
 
     const ld = {

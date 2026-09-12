@@ -2,6 +2,7 @@
 // Общий слой для бота (этапы 5–14) и веб-панели (этап 17) — логика публикации
 // не переписывается заново, поэтому после удаления бота ничего не ломается.
 import { db } from './db.js';
+import { excerptOf } from './post-text.js';
 import { uniqueSlug } from './slug.js';
 
 const findForecastByDate = db.prepare('SELECT id FROM forecast WHERE date = ?');
@@ -134,7 +135,7 @@ export function updateForecastField(id, field, value) {
 export function updatePostField(id, field, value) {
   if (!POST_FIELDS.has(field)) throw new Error(`Недопустимое поле статьи: ${field}`);
   if (field === 'body') {
-    const excerpt = (String(value).split(/\n\s*\n/)[0] || value).slice(0, 180).trim();
+    const excerpt = excerptOf(value);
     db.prepare('UPDATE posts SET body = ?, excerpt = ? WHERE id = ?').run(value, excerpt, Number(id));
     return;
   }
